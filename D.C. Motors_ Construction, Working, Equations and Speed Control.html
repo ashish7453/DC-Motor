@@ -1,0 +1,1790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>D.C. Motors: Construction, Working, Equations and Speed Control</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=STIX+Two+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDF1F0; --surface:#FFFFFF; --surface-2:#F6F8F7; --ink:#15232A; --muted:#4C5D64; --line:#CBD5D3;
+  --enamel:#1F6150; --enamel-ink:#FFFFFF; --enamel-soft:#DCEAE5; --copper:#B4652A; --copper-soft:#F3E3D6;
+  --steel:#7B8A91; --steel-2:#A9B5BA; --steel-3:#D5DCDF; --north:#C53A3A; --south:#2F5FAE;
+  --ok:#1D7646; --ok-soft:#DDF0E5; --bad:#B42318; --bad-soft:#FBE4E1; --warn:#9A5B00; --warn-soft:#FBEFD8;
+  --plate:#C9CFD1; --plate-ink:#1A2428;
+  --f-head:"Barlow Semi Condensed","Arial Narrow",Arial,sans-serif;
+  --f-body:"Source Sans 3","Segoe UI",Roboto,Arial,sans-serif;
+  --f-math:"STIX Two Text","Cambria Math",Cambria,"Times New Roman",serif;
+  --side:290px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F171A; --surface:#162125; --surface-2:#1B282D; --ink:#E3ECEA; --muted:#9DB0B4; --line:#2C3D42;
+    --enamel:#56B597; --enamel-ink:#08201A; --enamel-soft:#1A3830; --copper:#DB8B4E; --copper-soft:#3A2A1D;
+    --steel:#8C9CA3; --steel-2:#5F6F76; --steel-3:#33434A; --north:#E36A6A; --south:#729BE0;
+    --ok:#5BC98B; --ok-soft:#173327; --bad:#F07A6E; --bad-soft:#3A1D1A; --warn:#E5AE52; --warn-soft:#3A2D16;
+    --plate:#3A464B; --plate-ink:#E9EFEE; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+    --bg:#0F171A; --surface:#162125; --surface-2:#1B282D; --ink:#E3ECEA; --muted:#9DB0B4; --line:#2C3D42;
+    --enamel:#56B597; --enamel-ink:#08201A; --enamel-soft:#1A3830; --copper:#DB8B4E; --copper-soft:#3A2A1D;
+    --steel:#8C9CA3; --steel-2:#5F6F76; --steel-3:#33434A; --north:#E36A6A; --south:#729BE0;
+    --ok:#5BC98B; --ok-soft:#173327; --bad:#F07A6E; --bad-soft:#3A1D1A; --warn:#E5AE52; --warn-soft:#3A2D16;
+    --plate:#3A464B; --plate-ink:#E9EFEE; color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 72px);scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 17.5px/1.62 var(--f-body);-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-family:var(--f-head);line-height:1.15;margin:0 0 .5em;letter-spacing:.005em}
+h2{font-size:2.05rem;font-weight:700}
+h3{font-size:1.45rem;font-weight:600;margin-top:1.6em}
+h4{font-size:1.15rem;font-weight:600;margin-top:1.2em}
+p,li{max-width:70ch}
+a{color:var(--enamel)}
+img,svg{max-width:100%}
+:focus-visible{outline:3px solid var(--enamel);outline-offset:2px;border-radius:4px}
+button,input,select{font:inherit;color:inherit}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ---------- layout ---------- */
+.app{display:grid;grid-template-columns:var(--side) minmax(0,1fr);min-height:100%}
+.side{position:sticky;top:env(safe-area-inset-top,0px);height:calc(100vh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));overflow-y:auto;background:var(--surface);border-right:1px solid var(--line);padding:22px 18px 28px}
+.brand{display:flex;gap:10px;align-items:center;text-decoration:none;color:var(--ink);margin-bottom:18px}
+.brand svg{flex:none}
+.brand b{font-family:var(--f-head);font-size:1.3rem;font-weight:700;line-height:1.05;display:block}
+.brand span{font-size:.82rem;color:var(--muted)}
+.meter{margin:0 0 18px}
+.meter-row{display:flex;justify-content:space-between;font-size:.88rem;color:var(--muted);margin-bottom:6px}
+.meter-row strong{color:var(--ink);font-variant-numeric:tabular-nums}
+.meter-bar{height:8px;border-radius:99px;background:var(--steel-3);overflow:hidden}
+.meter-fill{height:100%;width:0;background:var(--enamel);transition:width .4s}
+nav.toc ol{list-style:none;margin:0;padding:0}
+nav.toc>ol>li{margin-bottom:6px}
+.toc-view{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:none;border:0;padding:8px 10px;border-radius:7px;cursor:pointer;font-family:var(--f-head);font-weight:600;font-size:1.06rem}
+.toc-view:hover{background:var(--surface-2)}
+.toc-view[aria-current="page"]{background:var(--enamel-soft);color:var(--ink)}
+.toc-view .num{display:inline-grid;place-items:center;min-width:26px;height:26px;border-radius:6px;background:var(--steel-3);font-size:.85rem}
+.toc-view[aria-current="page"] .num{background:var(--enamel);color:var(--enamel-ink)}
+.toc-secs{padding:2px 0 6px 44px!important}
+.toc-sec{display:flex;gap:8px;align-items:baseline;width:100%;text-align:left;background:none;border:0;padding:3px 4px;cursor:pointer;font-size:.92rem;color:var(--muted);border-radius:5px}
+.toc-sec:hover{color:var(--ink);background:var(--surface-2)}
+.tick{flex:none;width:14px;height:14px;border-radius:50%;border:2px solid var(--steel-2);position:relative;top:2px}
+.tick.done{background:var(--ok);border-color:var(--ok)}
+.tick.done::after{content:"";position:absolute;left:3px;top:0;width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.side-foot{margin-top:18px;padding-top:14px;border-top:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap}
+.topbar{display:none}
+main{min-width:0;padding:36px clamp(18px,4vw,56px) 80px}
+.view{max-width:920px;margin:0 auto}
+.view[hidden]{display:none}
+section.sec{padding-top:12px;margin-bottom:56px}
+.sec-head{display:flex;gap:14px;align-items:baseline;border-bottom:2px solid var(--ink);padding-bottom:8px;margin-bottom:18px}
+.sec-head .sn{font-family:var(--f-head);font-weight:700;font-size:1.05rem;color:var(--enamel);min-width:2.4em}
+.sec-head h3{margin:0;font-size:1.6rem}
+.mod-title{margin-bottom:28px}
+.mod-title p{color:var(--muted);font-size:1.05rem}
+.mod-title .kicker{font-family:var(--f-head);font-weight:600;color:var(--enamel);font-size:1.1rem;margin:0 0 4px}
+
+/* ---------- components ---------- */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;margin:22px 0}
+.panel>h4:first-child{margin-top:0}
+.panel-head{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap;margin-bottom:10px}
+.panel-head h4{margin:0}
+.bloom{display:inline-block;font-size:.78rem;font-weight:600;padding:2px 9px;border-radius:99px;border:1px solid currentColor;white-space:nowrap}
+.bloom.re{color:#6B4FA0}.bloom.un{color:var(--south)}.bloom.ap{color:var(--enamel)}.bloom.an{color:var(--copper)}
+.formula{font-family:var(--f-math);font-size:1.55rem;background:var(--enamel-soft);border-left:4px solid var(--enamel);padding:14px 20px;border-radius:0 8px 8px 0;margin:18px 0;overflow-x:auto;white-space:nowrap}
+.formula .frac{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;margin:0 4px}
+.formula .frac>span:first-child{border-bottom:1.5px solid currentColor;padding:0 4px}
+.formula .frac>span:last-child{padding:0 4px}
+.m{font-family:var(--f-math);font-style:italic;white-space:nowrap}
+.m sub{font-style:italic;font-size:.75em}
+.where{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:8px 0 14px;max-width:70ch}
+.where dt{font-family:var(--f-math);font-style:italic;font-size:1.1rem}
+.where dd{margin:0}
+.note,.warnbox,.keybox{padding:12px 16px;border-radius:8px;margin:16px 0;max-width:76ch}
+.note{background:var(--surface-2);border:1px dashed var(--steel-2)}
+.warnbox{background:var(--warn-soft);border-left:4px solid var(--warn)}
+.keybox{background:var(--copper-soft);border-left:4px solid var(--copper)}
+.note p,.warnbox p,.keybox p{margin:.3em 0}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);padding:7px 14px;border-radius:7px;cursor:pointer;font-weight:600;font-size:.95rem}
+.btn:hover{border-color:var(--steel)}
+.btn.primary{background:var(--enamel);color:var(--enamel-ink);border-color:var(--enamel)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.sm{padding:4px 10px;font-size:.86rem}
+.btn[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.complete-bar{display:flex;justify-content:flex-end;margin-top:20px}
+.btn.done{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:18px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:16px}
+.tbl-wrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.95rem}
+th,td{padding:10px 12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+thead th{background:var(--surface-2);font-family:var(--f-head);font-weight:600;font-size:1.02rem}
+tbody tr:last-child td{border-bottom:0}
+tbody th{font-weight:600;background:var(--surface-2);min-width:130px}
+.ctrl{display:grid;grid-template-columns:minmax(140px,190px) 1fr 86px;gap:10px;align-items:center;margin:8px 0}
+.ctrl label{font-size:.94rem}
+.ctrl output{font-variant-numeric:tabular-nums;font-weight:600;text-align:right}
+input[type=range]{width:100%;accent-color:var(--enamel);height:28px}
+.readouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:10px;margin:14px 0}
+.ro{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.ro span{display:block;font-size:.8rem;color:var(--muted)}
+.ro b{font-family:var(--f-head);font-size:1.45rem;font-variant-numeric:tabular-nums;font-weight:600}
+.ro.alert{border-color:var(--bad);background:var(--bad-soft)}
+.sim-tag{font-size:.82rem;color:var(--muted);font-style:italic;margin-top:8px}
+.status{padding:8px 12px;border-radius:7px;font-weight:600;margin:10px 0;font-size:.95rem}
+.status.ok{background:var(--ok-soft);color:var(--ok)}
+.status.bad{background:var(--bad-soft);color:var(--bad)}
+.status.warn{background:var(--warn-soft);color:var(--warn)}
+.stage{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:8px;display:block}
+canvas.plot{width:100%;height:260px;display:block;background:var(--surface-2);border:1px solid var(--line);border-radius:10px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:var(--surface);padding:6px 12px;cursor:pointer;font-size:.92rem;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--enamel);color:var(--enamel-ink);font-weight:600}
+
+/* ---------- home / nameplate ---------- */
+.hero{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:28px;align-items:center;margin-bottom:40px}
+.plate{background:linear-gradient(160deg,var(--plate),color-mix(in srgb,var(--plate) 82%,#000 18%));color:var(--plate-ink);border-radius:10px;padding:26px 30px 22px;position:relative;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 1px 0 var(--line)}
+.plate .rivet{position:absolute;width:11px;height:11px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#f4f6f6,#7e8a8e 70%)}
+.plate .rivet.a{top:10px;left:10px}.plate .rivet.b{top:10px;right:10px}.plate .rivet.c{bottom:10px;left:10px}.plate .rivet.d{bottom:10px;right:10px}
+.plate .maker{font-family:var(--f-head);font-weight:600;font-size:.98rem;opacity:.8;margin:0 0 6px}
+.plate h1{font-family:var(--f-head);font-weight:700;font-size:clamp(2.6rem,6vw,4.3rem);line-height:.95;margin:0 0 10px;letter-spacing:-.01em}
+.plate .sub{font-family:var(--f-head);font-size:clamp(1.15rem,2.2vw,1.45rem);font-weight:500;margin:0 0 18px;line-height:1.2}
+.plate dl{display:grid;grid-template-columns:auto 1fr;margin:0;border-top:1.5px solid currentColor}
+.plate dt,.plate dd{border-bottom:1px solid color-mix(in srgb,currentColor 40%,transparent);padding:7px 0;margin:0}
+.plate dt{font-family:var(--f-head);font-weight:700;padding-right:18px}
+.plate dd button{all:unset;cursor:pointer;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.plate dd button:focus-visible{outline:2px solid currentColor}
+.hero-motor{display:flex;flex-direction:column;align-items:center}
+.hero-motor svg{width:100%;max-width:380px}
+.hero-motor p{font-size:.88rem;color:var(--muted);text-align:center;margin:6px 0 0}
+.lo-list{counter-reset:lo;list-style:none;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:4px 26px}
+.lo-list li{counter-increment:lo;padding:8px 0 8px 40px;position:relative;border-bottom:1px solid var(--line)}
+.lo-list li::before{content:counter(lo);position:absolute;left:0;top:8px;font-family:var(--f-head);font-weight:700;color:var(--enamel);font-size:1.2rem}
+.path{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:14px}
+.path button{all:unset;cursor:pointer;display:block;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--enamel);border-radius:8px;padding:14px 16px}
+.path button:hover{border-color:var(--steel)}
+.path button:focus-visible{outline:3px solid var(--enamel)}
+.path b{font-family:var(--f-head);font-size:1.2rem;display:block}
+.path span{font-size:.92rem;color:var(--muted)}
+.path .pp{font-size:.82rem;color:var(--enamel);font-weight:600;margin-top:6px}
+
+/* ---------- diagrams ---------- */
+.diagram svg text{font-family:var(--f-body)}
+.part{cursor:pointer;transition:opacity .2s}
+.part:hover{filter:brightness(1.12)}
+.part:focus{outline:none}
+.part:focus-visible{outline:none}
+.part.dim{opacity:.28}
+.part.sel{filter:drop-shadow(0 0 4px var(--enamel))}
+.parts-list{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.parts-list button{border:1px solid var(--line);background:var(--surface);padding:4px 11px;border-radius:99px;cursor:pointer;font-size:.9rem}
+.parts-list button[aria-pressed="true"]{background:var(--enamel);color:var(--enamel-ink);border-color:var(--enamel)}
+.info-card{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-height:150px}
+.info-card h4{margin:0 0 6px}
+.info-card dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:0}
+.info-card dt{font-weight:600;color:var(--muted)}
+.info-card dd{margin:0}
+.dd-zone{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:8px;margin:12px 0}
+.slot{display:flex;gap:8px;align-items:center;border:2px dashed var(--steel-2);border-radius:8px;padding:6px 8px;min-height:46px;background:var(--surface-2)}
+.slot .sn2{font-family:var(--f-head);font-weight:700;min-width:22px;height:22px;border-radius:50%;background:var(--ink);color:var(--surface);display:grid;place-items:center;font-size:.85rem}
+.slot.over{border-color:var(--enamel);background:var(--enamel-soft)}
+.slot.right{border-style:solid;border-color:var(--ok);background:var(--ok-soft)}
+.slot.wrong{border-style:solid;border-color:var(--bad);background:var(--bad-soft)}
+.bank{display:flex;flex-wrap:wrap;gap:8px;min-height:44px;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.chip{border:1px solid var(--copper);background:var(--copper-soft);border-radius:99px;padding:5px 12px;cursor:grab;font-size:.92rem;user-select:none;touch-action:none}
+.chip.picked{outline:3px solid var(--enamel)}
+.slot .chip{cursor:pointer}
+
+/* ---------- quiz ---------- */
+.quiz{margin:20px 0}
+.q{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:12px 0}
+.q-top{display:flex;gap:10px;justify-content:space-between;align-items:baseline}
+.q-type{font-size:.78rem;color:var(--muted);white-space:nowrap}
+.q p.qt{margin:0 0 10px;font-weight:600}
+.opts{display:grid;gap:6px}
+.opt{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:8px;padding:8px 10px;cursor:pointer}
+.opt:hover{background:var(--surface-2)}
+.opt input{margin-top:5px;accent-color:var(--enamel)}
+.opt.right{border-color:var(--ok);background:var(--ok-soft)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.fill-in{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.fill-in input{border:1px solid var(--line);background:var(--surface-2);border-radius:7px;padding:6px 10px;width:min(260px,100%)}
+.fb{margin-top:10px;padding:9px 12px;border-radius:8px;font-size:.95rem;display:none}
+.fb.show{display:block}
+.fb.right{background:var(--ok-soft);border-left:4px solid var(--ok)}
+.fb.wrong{background:var(--bad-soft);border-left:4px solid var(--bad)}
+.q-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.quiz-sum{font-weight:600;margin-top:6px}
+.score-big{font-family:var(--f-head);font-size:3.2rem;font-weight:700;line-height:1}
+.bars{display:grid;gap:10px;margin:14px 0}
+.bar-row{display:grid;grid-template-columns:150px 1fr 70px;gap:10px;align-items:center;font-size:.95rem}
+.bar-track{height:12px;border-radius:99px;background:var(--steel-3);overflow:hidden}
+.bar-track i{display:block;height:100%;background:var(--enamel)}
+
+/* ---------- revision ---------- */
+details.faq{border-bottom:1px solid var(--line);padding:10px 0}
+details.faq summary{cursor:pointer;font-weight:600}
+details.faq p{margin:.5em 0 0}
+.gloss{display:grid;grid-template-columns:minmax(150px,220px) 1fr;gap:0}
+.gloss dt,.gloss dd{padding:8px 0;border-bottom:1px solid var(--line);margin:0}
+.gloss dt{font-weight:600;padding-right:14px}
+.search{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 12px;width:min(360px,100%)}
+.formula-card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.formula-card .formula{font-size:1.3rem;margin:8px 0}
+.formula-card p{margin:.3em 0;font-size:.95rem}
+
+/* ---------- lab ---------- */
+.lab{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}
+.lab-ctrls fieldset{border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:0 0 12px}
+.lab-ctrls legend{font-family:var(--f-head);font-weight:600;padding:0 6px}
+.switch{display:flex;gap:10px;align-items:center}
+.big-switch{font-family:var(--f-head);font-size:1.15rem;padding:10px 22px}
+.big-switch.on{background:var(--bad);border-color:var(--bad);color:#fff}
+.chk{display:flex;gap:8px;align-items:center;font-size:.94rem;margin:6px 0}
+.chk input{accent-color:var(--enamel);width:18px;height:18px}
+
+@media (max-width: 980px){
+  .app{grid-template-columns:1fr}
+  .topbar{display:flex;position:sticky;top:0;z-index:30;align-items:center;gap:12px;padding:10px 16px;padding-top:calc(10px + env(safe-area-inset-top,0px));margin-top:calc(-1 * env(safe-area-inset-top,0px));background:var(--surface);border-bottom:1px solid var(--line)}
+  body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:40;background:var(--surface)}
+  .topbar b{font-family:var(--f-head);font-size:1.1rem;flex:1}
+  .topbar .mini{width:80px}
+  .side{position:fixed;inset:0 auto 0 0;width:min(320px,88vw);height:100%;z-index:50;transform:translateX(-102%);transition:transform .25s;padding-top:calc(22px + env(safe-area-inset-top,0px));padding-bottom:calc(28px + env(safe-area-inset-bottom,0px))}
+  .side.open{transform:none;box-shadow:0 0 0 100vmax rgba(0,0,0,.4)}
+  .hero{grid-template-columns:1fr}
+  .hero-motor{order:-1}
+  .hero-motor svg{max-width:260px}
+  .lab{grid-template-columns:1fr}
+  main{padding-top:22px}
+}
+@media (max-width: 560px){
+  body{font-size:16.5px}
+  .ctrl{grid-template-columns:1fr 70px}
+  .ctrl input{grid-column:1 / -1;grid-row:2}
+  .formula{font-size:1.25rem}
+  .bar-row{grid-template-columns:96px 1fr 54px}
+  h2{font-size:1.75rem}
+}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+@media print{
+  .side,.topbar,.no-print,.complete-bar,.btn{display:none!important}
+  .app{display:block}
+  main{padding:0}
+  body{background:#fff;color:#000;font-size:12pt}
+  .view{display:none!important}
+  .view.printing{display:block!important}
+  .panel,.tbl-wrap,.formula-card{break-inside:avoid;border-color:#999}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="topbar">
+  <button class="btn sm" id="menuBtn" aria-controls="side" aria-expanded="false">Menu</button>
+  <b>D.C. Motors</b>
+  <div class="mini meter-bar" aria-hidden="true"><div class="meter-fill" id="miniFill"></div></div>
+</header>
+<aside class="side" id="side" aria-label="Course navigation">
+  <a class="brand" href="#home" data-go="home">
+    <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18" fill="none" stroke="var(--steel)" stroke-width="4"/><path d="M6 13h6v14H6z" fill="var(--north)"/><path d="M28 13h6v14h-6z" fill="var(--south)"/><circle cx="20" cy="20" r="7" fill="var(--copper)"/><circle cx="20" cy="20" r="2.2" fill="var(--surface)"/></svg>
+    <div><b>D.C. Motors</b><span>Basic Electrical Engineering</span></div>
+  </a>
+  <div class="meter">
+    <div class="meter-row"><span>Your progress</span><strong id="progTxt">0 of 0</strong></div>
+    <div class="meter-bar" role="progressbar" aria-label="Topics completed" id="progBar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="meter-fill" id="progFill"></div></div>
+  </div>
+  <nav class="toc" id="toc"></nav>
+  <div class="side-foot">
+    <button class="btn sm" id="themeBtn">Switch theme</button>
+    <button class="btn sm" id="resetProg">Reset progress</button>
+  </div>
+</aside>
+
+<main id="main">
+<!-- =================== HOME =================== -->
+<div class="view" id="v-home" data-view="home">
+  <div class="hero">
+    <div class="plate">
+      <i class="rivet a"></i><i class="rivet b"></i><i class="rivet c"></i><i class="rivet d"></i>
+      <p class="maker">Diploma Engineering &nbsp;/&nbsp; Electrical Engineering</p>
+      <h1>D.C. Motors</h1>
+      <p class="sub">Construction, Working, Equations and Speed Control</p>
+      <dl>
+        <dt>Module 1</dt><dd><button data-go="module1">Construction, working principle, types and applications</button></dd>
+        <dt>Module 2</dt><dd><button data-go="module2">Back EMF and torque equation (without derivation)</button></dd>
+        <dt>Module 3</dt><dd><button data-go="module3">Speed control of D.C. shunt motor</button></dd>
+        <dt>Lab</dt><dd><button data-go="lab">Virtual D.C. motor laboratory</button></dd>
+        <dt>Prerequisite</dt><dd>Basic circuits, magnetism, Ohm’s law</dd>
+      </dl>
+    </div>
+    <div class="hero-motor">
+      <svg id="heroMotor" viewBox="0 0 400 400" role="img" aria-label="Animated end view of a two-pole D.C. motor with a rotating armature"></svg>
+      <p>Two-pole motor, end view. Copper dots are armature conductors; ⊗ current into the page, ⊙ out of the page.</p>
+    </div>
+  </div>
+
+  <h2>What you will be able to do</h2>
+  <ol class="lo-list">
+    <li>Identify the parts of a D.C. motor and explain what each part does.</li>
+    <li>Explain how a D.C. motor works using Fleming’s Left-Hand Rule.</li>
+    <li>Classify D.C. motors and match each type to suitable applications.</li>
+    <li>State and use the back EMF equation (no derivation).</li>
+    <li>State and apply the torque equation (no derivation).</li>
+    <li>Explain why back EMF matters during starting and running.</li>
+    <li>Describe and compare speed-control methods for a D.C. shunt motor.</li>
+    <li>Select a suitable speed-control method for a practical job.</li>
+  </ol>
+
+  <h2 style="margin-top:40px">Your learning path</h2>
+  <p>Work through the modules in order. Every section ends with a short knowledge check. Press <em>Mark section complete</em> when you are confident, and your progress is saved in this browser.</p>
+  <div class="path" id="pathCards"></div>
+
+  <div class="note" style="margin-top:28px">
+    <p><b>How activities are labelled.</b> Each activity carries a Bloom’s Taxonomy level so you know what kind of thinking it asks for:
+    <span class="bloom re">Remember</span> recall facts,
+    <span class="bloom un">Understand</span> explain ideas,
+    <span class="bloom ap">Apply</span> use formulas and rules,
+    <span class="bloom an">Analyze</span> compare and choose.</p>
+  </div>
+</div>
+
+<!-- =================== MODULE 1 =================== -->
+<div class="view" id="v-module1" data-view="module1" hidden>
+  <div class="mod-title">
+    <p class="kicker">Module 1</p>
+    <h2>Construction, Working Principle, Types and Applications</h2>
+    <p>Start here: what a D.C. motor is made of, why it turns, and which type suits which job.</p>
+  </div>
+
+  <section class="sec" id="s-1-1">
+    <div class="sec-head"><span class="sn">1.1</span><h3>Introduction to D.C. motors</h3></div>
+    <p>A <b>D.C. motor</b> is a rotating electrical machine that converts <b>electrical energy</b> taken from a direct-current (D.C.) supply into <b>mechanical energy</b> in the form of a rotating shaft. The shaft then drives a load such as a fan, pump, conveyor belt or the wheels of a vehicle.</p>
+    <div class="grid2">
+      <div class="panel" style="margin:0">
+        <h4>Electrical input</h4>
+        <p>Voltage <span class="m">V</span> (volts) and current <span class="m">I</span> (amperes) taken from the D.C. supply.</p>
+        <p>Input power = <span class="m">V × I</span> watts.</p>
+      </div>
+      <div class="panel" style="margin:0">
+        <h4>Mechanical output</h4>
+        <p>Torque <span class="m">T</span> (N·m) at the shaft, turning at speed <span class="m">N</span> (rpm).</p>
+        <p>Output power = <span class="m">2πNT / 60</span> watts.</p>
+      </div>
+    </div>
+    <svg viewBox="0 0 720 150" class="stage" style="margin-top:18px" role="img" aria-label="Energy flow: D.C. supply to motor to mechanical load, with some energy lost as heat">
+      <rect x="20" y="45" width="150" height="60" rx="8" fill="var(--enamel-soft)" stroke="var(--enamel)" stroke-width="2"/>
+      <text x="95" y="72" text-anchor="middle" font-weight="700" fill="var(--ink)">D.C. supply</text>
+      <text x="95" y="92" text-anchor="middle" font-size="13" fill="var(--muted)">electrical energy</text>
+      <rect x="285" y="35" width="150" height="80" rx="40" fill="var(--copper-soft)" stroke="var(--copper)" stroke-width="2"/>
+      <text x="360" y="72" text-anchor="middle" font-weight="700" fill="var(--ink)">D.C. motor</text>
+      <text x="360" y="92" text-anchor="middle" font-size="13" fill="var(--muted)">converts</text>
+      <rect x="550" y="45" width="150" height="60" rx="8" fill="var(--surface)" stroke="var(--steel)" stroke-width="2"/>
+      <text x="625" y="72" text-anchor="middle" font-weight="700" fill="var(--ink)">Load</text>
+      <text x="625" y="92" text-anchor="middle" font-size="13" fill="var(--muted)">mechanical energy</text>
+      <path d="M172 75H280" stroke="var(--enamel)" stroke-width="6" marker-end="url(#ah1)"/>
+      <path d="M437 75H545" stroke="var(--steel)" stroke-width="6" marker-end="url(#ah2)"/>
+      <path d="M360 117V140" stroke="var(--bad)" stroke-width="3" stroke-dasharray="5 4"/>
+      <text x="372" y="140" font-size="13" fill="var(--bad)">losses (heat, friction)</text>
+      <defs><marker id="ah1" markerUnits="userSpaceOnUse" markerWidth="18" markerHeight="18" refX="4" refY="9" orient="auto"><path d="M0 0L18 9L0 18z" fill="var(--enamel)"/></marker><marker id="ah2" markerUnits="userSpaceOnUse" markerWidth="18" markerHeight="18" refX="4" refY="9" orient="auto"><path d="M0 0L18 9L0 18z" fill="var(--steel)"/></marker></defs>
+    </svg>
+    <p>Not all of the input becomes useful output. Some energy is lost as heat in the windings (copper loss), in the iron core (iron loss), and as friction in bearings and brushes. That is why output power is always less than input power, and efficiency is always below 100%.</p>
+    <h4>Where you meet D.C. motors</h4>
+    <p>Toy cars and cooling fans in computers, car windscreen wipers and power windows, cordless drills, e-rickshaws and battery forklifts, cranes, hoists, rolling mills and paper machines. They are chosen when we need <b>high starting torque</b> or <b>easy, smooth speed control</b>.</p>
+    <div class="quiz" data-quiz="q11"></div>
+    <div class="complete-bar"><button class="btn mark" data-sec="1.1">Mark section complete</button></div>
+  </section>
+
+  <section class="sec" id="s-1-2">
+    <div class="sec-head"><span class="sn">1.2</span><h3>Construction of a D.C. motor</h3></div>
+    <p>A D.C. motor has two main parts. The <b>stator</b> is the stationary part: yoke, poles and field winding. It produces the magnetic field. The <b>rotor</b> (armature) is the rotating part: armature core, armature winding, commutator and shaft. It carries the current that experiences the force. Brushes and bearings connect the two worlds: brushes carry current into the rotating armature, and bearings let the shaft turn smoothly.</p>
+
+    <div class="panel diagram">
+      <div class="panel-head"><h4>Explore the parts</h4><span class="bloom re">Remember</span></div>
+      <p style="margin-top:0">Select a part in either view, or use the buttons, to see its function, material and importance. The end view is a cross-section; the side view shows the commutator, brushes and bearings, which sit at one end of the shaft.</p>
+      <div class="parts-list" id="partBtns" role="group" aria-label="Motor parts"></div>
+      <div class="grid2">
+        <div><svg id="endView" viewBox="0 0 400 400" class="stage" role="img" aria-label="Cross-section end view of a two-pole D.C. motor"></svg><p class="sim-tag" style="text-align:center">End view (cross-section)</p></div>
+        <div><svg id="sideView" viewBox="0 0 420 300" class="stage" role="img" aria-label="Side view of a D.C. motor showing shaft, armature, commutator, brushes and bearings"></svg><p class="sim-tag" style="text-align:center">Side view (cut open along the shaft)</p>
+          <div class="info-card" id="partInfo" aria-live="polite"><h4>Choose a part</h4><p>Pick any coloured region or a button above.</p></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Part</th><th>Main function</th><th>Usual material</th></tr></thead>
+      <tbody id="partTable"></tbody>
+    </table></div>
+
+    <div class="panel">
+      <div class="panel-head"><h4>Activity: build the motor</h4><span class="bloom re">Remember</span></div>
+      <p style="margin-top:0">Drag each name onto the matching numbered marker. On a phone, tap a name and then tap a slot.</p>
+      <svg id="ddView" viewBox="0 0 760 320" class="stage" role="img" aria-label="Unlabelled D.C. motor with numbered markers 1 to 9"></svg>
+      <div class="dd-zone" id="ddSlots"></div>
+      <p style="margin:6px 0 4px;font-weight:600">Name bank</p>
+      <div class="bank" id="ddBank" aria-label="Name bank"></div>
+      <div class="row" style="margin-top:12px"><button class="btn primary" id="ddCheck">Check answers</button><button class="btn" id="ddReset">Reset</button></div>
+      <div id="ddResult" aria-live="polite"></div>
+    </div>
+    <div class="quiz" data-quiz="q12"></div>
+    <div class="complete-bar"><button class="btn mark" data-sec="1.2">Mark section complete</button></div>
+  </section>
+
+  <section class="sec" id="s-1-3">
+    <div class="sec-head"><span class="sn">1.3</span><h3>Working principle of a D.C. motor</h3></div>
+    <div class="keybox"><p><b>Motor principle.</b> When a current-carrying conductor is placed in a magnetic field, it experiences a mechanical force. The size of the force is <span class="m">F = BIL</span> newtons, where <span class="m">B</span> is flux density (Wb/m², tesla), <span class="m">I</span> is current (A) and <span class="m">L</span> is the length of conductor inside the field (m).</p></div>
+    <p>Why is there a force? The current in the conductor makes its own circular magnetic field. On one side of the conductor this field adds to the main field (the field becomes stronger); on the other side it opposes the main field (the field becomes weaker). Magnetic lines of force behave like stretched rubber bands, so the conductor is pushed from the stronger-field side towards the weaker-field side.</p>
+
+    <h4>Fleming’s Left-Hand Rule</h4>
+    <p>Stretch the thumb, first finger and second finger of your <b>left</b> hand so that they are at right angles to each other.</p>
+    <ul>
+      <li><b>F</b>irst finger points in the direction of the magnetic <b>F</b>ield (from N to S).</li>
+      <li>Se<b>c</b>ond finger points in the direction of <b>C</b>urrent.</li>
+      <li>Thu<b>m</b>b gives the direction of force, that is, <b>M</b>otion of the conductor.</li>
+    </ul>
+
+    <div class="panel">
+      <div class="panel-head"><h4>Simulation: find the force</h4><span class="bloom ap">Apply</span></div>
+      <p style="margin-top:0">Change the field and current directions. Predict the force first, then press <em>Show force</em>.</p>
+      <div class="grid2">
+        <svg id="flemSvg" viewBox="0 0 340 260" class="stage" role="img" aria-label="Conductor between magnetic poles"></svg>
+        <div>
+          <p style="margin:0 0 6px"><b>Magnetic field</b></p>
+          <div class="seg" id="flemField"><button aria-pressed="true" data-v="1">N left, S right</button><button aria-pressed="false" data-v="-1">S left, N right</button></div>
+          <p style="margin:14px 0 6px"><b>Current in conductor</b></p>
+          <div class="seg" id="flemCur"><button aria-pressed="true" data-v="1">Into page ⊗</button><button aria-pressed="false" data-v="-1">Out of page ⊙</button></div>
+          <p style="margin:14px 0 6px"><b>Your prediction</b></p>
+          <div class="seg" id="flemPred"><button aria-pressed="false" data-v="up">Up</button><button aria-pressed="false" data-v="down">Down</button></div>
+          <div class="row" style="margin-top:14px"><button class="btn primary" id="flemShow">Show force</button></div>
+          <div id="flemOut" aria-live="polite" style="margin-top:10px"></div>
+        </div>
+      </div>
+    </div>
+
+    <h4>From force on one conductor to rotation</h4>
+    <p>Place a rectangular coil (two conductors joined at the back) between the poles and free to turn on a shaft. The two sides of the coil carry current in <b>opposite</b> directions, so the forces on them are opposite: one side is pushed up and the other down. These two equal and opposite forces form a <b>couple</b>, and a couple produces <b>torque</b> that turns the coil.</p>
+    <p>A real armature has many coils placed in slots all round the core, so at every instant many conductors are under the poles and producing force. Their torques add up to give smooth, continuous rotation.</p>
+
+    <h4>Why the commutator is essential</h4>
+    <p>As the coil passes the vertical position (the <b>magnetic neutral axis</b>), each side moves from under one pole to under the other. If the current in the coil stayed the same, the force would now act the other way and push the coil back. The <b>commutator</b>, together with the brushes, reverses the current in the coil at exactly that moment. So the conductor under the N pole always carries current in the same direction, and the torque stays in one direction: <b>unidirectional torque</b>.</p>
+
+    <div class="panel">
+      <div class="panel-head"><h4>Animation: a single-coil motor, step by step</h4><span class="bloom un">Understand</span></div>
+      <div class="grid2">
+        <svg id="coilSvg" viewBox="0 0 360 340" class="stage" role="img" aria-label="Animated single-coil motor between N and S poles"></svg>
+        <div>
+          <div class="row">
+            <button class="btn primary" id="coilPlay">Play</button>
+            <button class="btn" id="coilStep">Step 45°</button>
+            <button class="btn" id="coilReset">Reset</button>
+          </div>
+          <p style="margin:14px 0 6px"><b>Current reversal device</b></p>
+          <div class="seg" id="coilMode"><button aria-pressed="true" data-v="comm">Commutator</button><button aria-pressed="false" data-v="slip">No commutator</button></div>
+          <p style="margin:14px 0 6px"><b>Supply polarity</b></p>
+          <div class="seg" id="coilPol"><button aria-pressed="true" data-v="1">Normal</button><button aria-pressed="false" data-v="-1">Reversed</button></div>
+          <div style="margin-top:14px">
+            <div class="meter-row"><span>Torque on coil</span><strong id="coilTq">0</strong></div>
+            <div style="height:14px;background:var(--steel-3);border-radius:99px;position:relative;overflow:hidden"><i id="coilTqBar" style="position:absolute;top:0;bottom:0;left:50%;width:0;background:var(--enamel)"></i><i style="position:absolute;left:50%;top:0;bottom:0;width:2px;background:var(--ink)"></i></div>
+            <div class="meter-row" style="margin-top:2px"><span>clockwise</span><span>anticlockwise</span></div>
+          </div>
+          <div class="note" id="coilExplain" aria-live="polite" style="margin-top:12px"></div>
+        </div>
+      </div>
+      <p class="sim-tag">Simplified illustration: one coil, uniform field, torque shown in relative units.</p>
+    </div>
+    <div class="quiz" data-quiz="q13"></div>
+    <div class="complete-bar"><button class="btn mark" data-sec="1.3">Mark section complete</button></div>
+  </section>
+
+  <section class="sec" id="s-1-4">
+    <div class="sec-head"><span class="sn">1.4</span><h3>Types of D.C. motors</h3></div>
+    <p>D.C. motors are classified by <b>how the field winding gets its current</b>, that is, how the field winding is connected to the armature and the supply.</p>
+    <svg viewBox="0 0 720 260" class="stage" role="img" aria-label="Classification tree of D.C. motors">
+      <g font-size="15" fill="var(--ink)" text-anchor="middle">
+        <rect x="270" y="14" width="180" height="42" rx="8" fill="var(--enamel)"/><text x="360" y="41" fill="var(--enamel-ink)" font-weight="700">D.C. motors</text>
+        <path d="M360 56V80M170 80H550M170 80V100M550 80V100" stroke="var(--steel)" stroke-width="2" fill="none"/>
+        <rect x="70" y="100" width="200" height="42" rx="8" fill="var(--surface)" stroke="var(--enamel)" stroke-width="2"/><text x="170" y="127" font-weight="600">Separately excited</text>
+        <rect x="450" y="100" width="200" height="42" rx="8" fill="var(--surface)" stroke="var(--enamel)" stroke-width="2"/><text x="550" y="127" font-weight="600">Self-excited</text>
+        <path d="M550 142V166M420 166H680M420 166V186M550 166V186M680 166V186" stroke="var(--steel)" stroke-width="2" fill="none"/>
+        <rect x="362" y="186" width="116" height="42" rx="8" fill="var(--copper-soft)" stroke="var(--copper)" stroke-width="2"/><text x="420" y="213">Shunt</text>
+        <rect x="492" y="186" width="116" height="42" rx="8" fill="var(--copper-soft)" stroke="var(--copper)" stroke-width="2"/><text x="550" y="213">Series</text>
+        <rect x="622" y="186" width="92" height="42" rx="8" fill="var(--copper-soft)" stroke="var(--copper)" stroke-width="2"/><text x="668" y="213">Compound</text>
+        <text x="170" y="170" font-size="13" fill="var(--muted)">field fed from a</text><text x="170" y="188" font-size="13" fill="var(--muted)">separate D.C. source</text>
+        <text x="550" y="250" font-size="13" fill="var(--muted)">field fed from the motor’s own supply</text>
+      </g>
+    </svg>
+
+    <div class="panel">
+      <div class="panel-head"><h4>Connection diagrams</h4><span class="bloom un">Understand</span></div>
+      <div class="seg" id="typeTabs" role="group" aria-label="Motor type"><button aria-pressed="true" data-v="sep">Separately excited</button><button aria-pressed="false" data-v="shunt">Shunt</button><button aria-pressed="false" data-v="series">Series</button><button aria-pressed="false" data-v="comp">Compound</button></div>
+      <div class="grid2" style="margin-top:14px">
+        <svg id="typeSvg" viewBox="0 0 360 240" class="stage" role="img" aria-label="Connection diagram"></svg>
+        <div id="typeInfo" aria-live="polite"></div>
+      </div>
+    </div>
+
+    <h4>Shunt, series and compound: the key difference</h4>
+    <p><b>Shunt motor.</b> The field winding has many turns of thin wire and is connected in <b>parallel</b> with the armature. Its current is small and nearly constant, so the flux is nearly constant. Result: speed falls only slightly as load rises, so it is called a <b>nearly constant-speed motor</b>.</p>
+    <p><b>Series motor.</b> The field winding has a few turns of thick wire and is connected in <b>series</b> with the armature, so the same current flows through both. Flux rises with load current, so torque rises roughly as the square of current (<span class="m">T ∝ I<sub>a</sub>²</span> before the iron saturates). Result: <b>very high starting torque</b>, but speed falls sharply with load and rises dangerously at no load. A series motor must never be started or run without load.</p>
+    <p><b>Compound motor.</b> It has both a shunt field and a series field. In the commonly used <b>cumulative compound</b> motor the two fields help each other, giving a combination of good starting torque and a definite no-load speed.</p>
+
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Feature</th><th>Separately excited</th><th>Shunt</th><th>Series</th><th>Cumulative compound</th></tr></thead>
+      <tbody>
+        <tr><th>Field connection</th><td>Separate D.C. source</td><td>Parallel with armature</td><td>Series with armature</td><td>Shunt field plus series field</td></tr>
+        <tr><th>Field winding</th><td>Many turns, thin wire</td><td>Many turns, thin wire</td><td>Few turns, thick wire</td><td>Both kinds</td></tr>
+        <tr><th>Flux</th><td>Constant (set independently)</td><td>Nearly constant</td><td>Varies with load current</td><td>Rises somewhat with load</td></tr>
+        <tr><th>Starting torque</th><td>Medium</td><td>Medium</td><td>Very high</td><td>High</td></tr>
+        <tr><th>Speed behaviour</th><td>Nearly constant; easy wide control</td><td>Nearly constant</td><td>Varies widely; very high at light load</td><td>Falls more than shunt with load; safe no-load speed</td></tr>
+        <tr><th>Typical applications</th><td>Precise variable-speed drives, rolling mills, test benches</td><td>Lathes, drilling machines, fans, blowers, centrifugal pumps, conveyors</td><td>Electric traction, cranes, hoists, trolleys</td><td>Presses, shears, punching machines, rolling mills, lifts</td></tr>
+      </tbody>
+    </table></div>
+    <div class="note"><p><b>Permanent magnet D.C. (PMDC) motors</b>, found in toys, wipers and cordless tools, use permanent magnets instead of a field winding. They behave like a separately excited motor with fixed flux.</p></div>
+    <div class="quiz" data-quiz="q14"></div>
+    <div class="complete-bar"><button class="btn mark" data-sec="1.4">Mark section complete</button></div>
+  </section>
+
+  <section class="sec" id="s-1-5">
+    <div class="sec-head"><span class="sn">1.5</span><h3>Applications of D.C. motors</h3></div>
+    <p>A motor is chosen by matching its <b>torque–speed behaviour</b> to what the load needs. Heavy loads that must be started from rest need high starting torque. Machine tools need steady speed. Lifts and process lines need smooth control.</p>
+    <div class="grid3" id="appCards"></div>
+    <div class="quiz" data-quiz="q15"></div>
+    <div class="complete-bar"><button class="btn mark" data-sec="1.5">Mark section complete</button></div>
+  </section>
+
+  <section class="sec" id="s-1-6">
+    <div class="sec-head"><span class="sn">1.6</span><h3>Module 1 review activities</h3></div>
+    <p>These questions mix everything from Module 1: components, working principle, classification and applications.</p>
+    <div class="panel">
+      <div class="panel-head"><h4>Classification sort</h4><span class="bloom an">Analyze</span></div>
+      <p style="margin-top:0">Each statement describes one motor type. Choose the type it describes.</p>
+      <div id="sortQ"></div>
+    </div>
+    <div class="quiz" data-quiz="q16"></div>
+    <div class="complete-bar"><button class="btn mark" data-sec="1.6">Mark section complete</button></div>
+  </section>
+</div>
+<!-- =================== MODULE 2 =================== -->
+<div class="view" id="v-module2" data-view="module2" hidden>
+  <div class="mod-title">
+    <p class="kicker">Module 2</p>
+    <h2>Back EMF and Torque Equation</h2>
+    <p>Two equations describe what happens inside a running motor. You will state and use them; no derivations are needed.</p>
+  </div>
+
+  <section class="sec" id="s-2-1">
+    <div class="sec-head"><span class="sn">2.1</span><h3>Back EMF</h3></div>
+    <p>When the armature rotates, its conductors cut the magnetic flux of the field poles. By Faraday’s law of electromagnetic induction, an EMF is induced in them, exactly as in a D.C. generator. So a running motor is also acting as a generator at the same time.</p>
+    <p>By <b>Lenz’s law</b>, an induced EMF always opposes the cause that produces it. Here the cause is the current driven by the supply, so the induced EMF acts <b>against the supply voltage</b>. It is therefore called the <b>back EMF</b> or <b>counter EMF</b>, written <span class="m">E<sub>b</sub></span>.</p>
+    <p>The armature circuit then has the supply voltage pushing current one way and the back EMF pushing the other way. The <b>net</b> voltage, <span class="m">V − E<sub>b</sub></span>, drives the armature current through the armature resistance:</p>
+    <div class="formula">V = E<sub>b</sub> + I<sub>a</sub>R<sub>a</sub> &nbsp;&nbsp;&nbsp;or&nbsp;&nbsp;&nbsp; I<sub>a</sub> = <span class="frac"><span>V − E<sub>b</sub></span><span>R<sub>a</sub></span></span></div>
+    <dl class="where">
+      <dt>V</dt><dd>supply voltage across the armature, volts (V)</dd>
+      <dt>E<sub>b</sub></dt><dd>back EMF, volts (V)</dd>
+      <dt>I<sub>a</sub></dt><dd>armature current, amperes (A)</dd>
+      <dt>R<sub>a</sub></dt><dd>armature resistance, ohms (Ω)</dd>
+    </dl>
+    <div class="note"><p>This simplified equation neglects the small voltage drop at the brushes (about 1 to 2 V in total). When the brush drop is given, write <span class="m">V = E<sub>b</sub> + I<sub>a</sub>R<sub>a</sub> + V<sub>brush</sub></span>.</p></div>
+
+    <div class="panel">
+      <div class="panel-head"><h4>Simulation: the armature circuit</h4><span class="bloom ap">Apply</span></div>
+      <svg id="bemfSvg" viewBox="0 0 520 230" class="stage" role="img" aria-label="Armature circuit with supply, armature resistance and back EMF"></svg>
+      <div class="ctrl"><label for="bV">Supply voltage V</label><input type="range" id="bV" min="0" max="250" step="5" value="220"><output id="bVo"></output></div>
+      <div class="ctrl"><label for="bE">Back EMF E<sub>b</sub></label><input type="range" id="bE" min="0" max="250" step="1" value="215"><output id="bEo"></output></div>
+      <div class="ctrl"><label for="bR">Armature resistance R<sub>a</sub></label><input type="range" id="bR" min="0.2" max="2" step="0.1" value="0.5"><output id="bRo"></output></div>
+      <div class="row"><button class="btn sm" id="bStart"><span>Show the starting instant (E<sub>b</sub> = 0)</span></button><button class="btn sm" id="bRun">Show normal running</button></div>
+      <div class="readouts">
+        <div class="ro"><span>Net voltage V − E<sub>b</sub></span><b id="bNet">–</b></div>
+        <div class="ro" id="bIaBox"><span>Armature current I<sub>a</sub></span><b id="bIa">–</b></div>
+        <div class="ro"><span>Power converted E<sub>b</sub>I<sub>a</sub></span><b id="bPm">–</b></div>
+        <div class="ro"><span>Copper loss I<sub>a</sub>²R<sub>a</sub></span><b id="bPc">–</b></div>
+      </div>
+      <div id="bMsg" aria-live="polite"></div>
+      <p class="sim-tag">Steady-state calculation using V = E<sub>b</sub> + I<sub>a</sub>R<sub>a</sub>. Assumes a motor rated about 10 A; values are illustrative, not measurements.</p>
+    </div>
+
+    <h4>Why back EMF is important</h4>
+    <p><b>1. It limits the armature current.</b> Because <span class="m">I<sub>a</sub> = (V − E<sub>b</sub>)/R<sub>a</sub></span> and <span class="m">R<sub>a</sub></span> is very small (often below 1 Ω), only a small net voltage is needed to drive rated current. Back EMF uses up most of the supply voltage and keeps current safe.</p>
+    <p><b>2. It makes the motor self-regulating.</b> If the load increases, the motor slows slightly, so <span class="m">E<sub>b</sub></span> falls. Then <span class="m">V − E<sub>b</sub></span> rises, armature current rises, and the motor develops more torque to carry the extra load. If the load falls, the opposite happens. The motor automatically draws just the current its load needs.</p>
+    <p><b>3. It represents the useful power.</b> The power converted from electrical to mechanical form is <span class="m">P<sub>m</sub> = E<sub>b</sub>I<sub>a</sub></span> watts.</p>
+
+    <div class="warnbox">
+      <p><b>At the starting instant, the armature is at rest, so N = 0 and E<sub>b</sub> = 0.</b> The only thing limiting current is the tiny armature resistance:</p>
+      <p><span class="m">I<sub>a</sub>(start) = V / R<sub>a</sub></span>. For a 220 V motor with R<sub>a</sub> = 0.5 Ω this is 220 / 0.5 = <b>440 A</b>, while the rated current may be only 10 to 20 A.</p>
+      <p>Such a current can burn the armature winding, damage the commutator with heavy sparking, and blow fuses. So a <b>starter</b> (for example a 3-point or 4-point starter) adds resistance in series with the armature at starting and cuts it out step by step as speed and back EMF build up.</p>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h4>Worked example</h4><span class="bloom ap">Apply</span></div>
+      <p style="margin-top:0">A 220 V D.C. shunt motor has armature resistance 0.5 Ω and draws an armature current of 20 A. Find the back EMF and the starting current if no starter is used.</p>
+      <p><b>Given:</b> V = 220 V, R<sub>a</sub> = 0.5 Ω, I<sub>a</sub> = 20 A</p>
+      <p><b>Back EMF:</b> E<sub>b</sub> = V − I<sub>a</sub>R<sub>a</sub> = 220 − (20 × 0.5) = 220 − 10 = <b>210 V</b></p>
+      <p><b>Starting current</b> (E<sub>b</sub> = 0): I<sub>a</sub> = V / R<sub>a</sub> = 220 / 0.5 = <b>440 A</b>, which is 22 times the running current.</p>
+    </div>
+    <div class="quiz" data-quiz="q21"></div>
+    <div class="complete-bar"><button class="btn mark" data-sec="2.1">Mark section complete</button></div>
+  </section>
+
+  <section class="sec" id="s-2-2">
+    <div class="sec-head"><span class="sn">2.2</span><h3>Back EMF equation</h3></div>
+    <p>The back EMF has the same form as the EMF equation of a D.C. generator. It is stated here without derivation:</p>
+    <div class="formula">E<sub>b</sub> = <span class="frac"><span>P Φ Z N</span><span>60 A</span></span> &nbsp;volts</div>
+    <dl class="where">
+      <dt>E<sub>b</sub></dt><dd>back EMF, volts (V)</dd>
+      <dt>P</dt><dd>number of poles (a pure number, always even: 2, 4, 6…)</dd>
+      <dt>Φ</dt><dd>magnetic flux per pole, webers (Wb)</dd>
+      <dt>Z</dt><dd>total number of armature conductors</dd>
+      <dt>N</dt><dd>armature speed, revolutions per minute (rpm)</dd>
+      <dt>A</dt><dd>number of parallel paths in the armature winding: <b>A = P</b> for lap winding, <b>A = 2</b> for wave winding</dd>
+    </dl>
+    <p>The number 60 converts speed from revolutions per minute into revolutions per second.</p>
+    <h4>What the equation tells us</h4>
+    <p>For a given motor, <span class="m">P</span>, <span class="m">Z</span> and <span class="m">A</span> are fixed by its design. So we can write <span class="m">E<sub>b</sub> ∝ ΦN</span>:</p>
+    <ul>
+      <li>With flux constant, back EMF is <b>directly proportional to speed</b>. Double the speed, double the back EMF.</li>
+      <li>With speed constant, back EMF is <b>directly proportional to flux</b>. A weaker field gives less back EMF at the same speed.</li>
+      <li>Rearranging gives <span class="m">N ∝ E<sub>b</sub> / Φ</span>, which is the basis of speed control in Module 3.</li>
+    </ul>
+
+    <div class="panel">
+      <div class="panel-head"><h4>Worked example</h4><span class="bloom ap">Apply</span></div>
+      <p style="margin-top:0">A 4-pole, lap-wound D.C. motor has 480 armature conductors and a flux of 0.02 Wb per pole. Find the back EMF when it runs at 1000 rpm.</p>
+      <p><b>Given:</b> P = 4, Z = 480, Φ = 0.02 Wb, N = 1000 rpm, lap winding so A = P = 4</p>
+      <p><b>Formula:</b> E<sub>b</sub> = PΦZN / (60A)</p>
+      <p><b>Substitute:</b> E<sub>b</sub> = (4 × 0.02 × 480 × 1000) / (60 × 4) = 38 400 / 240</p>
+      <p><b>Answer:</b> E<sub>b</sub> = <b>160 V</b></p>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h4>Back EMF calculator</h4><span class="bloom ap">Apply</span></div>
+      <div class="ctrl"><label for="eP">Poles P</label><input type="range" id="eP" min="2" max="8" step="2" value="4"><output id="ePo"></output></div>
+      <div class="ctrl"><label for="eF">Flux Φ (Wb)</label><input type="range" id="eF" min="0.005" max="0.05" step="0.001" value="0.02"><output id="eFo"></output></div>
+      <div class="ctrl"><label for="eZ">Conductors Z</label><input type="range" id="eZ" min="120" max="1200" step="12" value="480"><output id="eZo"></output></div>
+      <div class="ctrl"><label for="eN">Speed N (rpm)</label><input type="range" id="eN" min="0" max="2000" step="50" value="1000"><output id="eNo"></output></div>
+      <div class="row" style="margin:8px 0"><span>Winding:</span><div class="seg" id="eW"><button aria-pressed="true" data-v="lap">Lap (A = P)</button><button aria-pressed="false" data-v="wave">Wave (A = 2)</button></div></div>
+      <div class="formula" id="eOut" style="font-size:1.25rem"></div>
+    </div>
+    <div class="quiz" data-quiz="q22"></div>
+    <div class="complete-bar"><button class="btn mark" data-sec="2.2">Mark section complete</button></div>
+  </section>
+
+  <section class="sec" id="s-2-3">
+    <div class="sec-head"><span class="sn">2.3</span><h3>Torque equation of a D.C. motor</h3></div>
+    <p><b>Torque</b> is the turning effect of a force about an axis. It equals force multiplied by the perpendicular distance from the axis: <span class="m">T = F × r</span>, measured in newton-metres (N·m). In a motor, the forces on all the armature conductors act at the radius of the armature and together produce the electromagnetic torque that turns the shaft.</p>
+    <p>Stated without derivation, the torque developed in the armature is:</p>
+    <div class="formula">T = <span class="frac"><span>P Z</span><span>2π A</span></span> Φ I<sub>a</sub> &nbsp;N·m &nbsp;&nbsp;&nbsp;≈&nbsp;&nbsp; 0.159 <span class="frac"><span>P Z</span><span>A</span></span> Φ I<sub>a</sub></div>
+    <dl class="where">
+      <dt>T</dt><dd>electromagnetic (armature) torque, newton-metres (N·m)</dd>
+      <dt>P</dt><dd>number of poles</dd>
+      <dt>Z</dt><dd>total number of armature conductors</dd>
+      <dt>Φ</dt><dd>flux per pole, webers (Wb)</dd>
+      <dt>I<sub>a</sub></dt><dd>armature current, amperes (A)</dd>
+      <dt>A</dt><dd>number of parallel paths</dd>
+    </dl>
+    <p>For a given motor, <span class="m">P</span>, <span class="m">Z</span> and <span class="m">A</span> are constant, so:</p>
+    <div class="formula" style="font-size:1.35rem">T ∝ Φ I<sub>a</sub></div>
+    <ul>
+      <li><b>Shunt motor:</b> flux is nearly constant, so <span class="m">T ∝ I<sub>a</sub></span>. A straight-line relationship.</li>
+      <li><b>Series motor:</b> flux is produced by the armature current itself, so <span class="m">Φ ∝ I<sub>a</sub></span> (before saturation) and <span class="m">T ∝ I<sub>a</sub>²</span>. This is why a series motor gives very high starting torque.</li>
+    </ul>
+    <div class="keybox">
+      <p><b>Electromagnetic torque vs. shaft torque.</b> The torque in the equation is the <b>electromagnetic</b> (gross) torque developed in the armature. Part of it is used up in overcoming iron loss and mechanical losses (friction at bearings and brushes, air resistance). The torque actually available at the shaft is the <b>shaft (useful) torque</b> <span class="m">T<sub>sh</sub></span>, which is always a little <b>less</b>:</p>
+      <p><span class="m">T<sub>sh</sub> = T − T<sub>lost</sub></span> &nbsp; and &nbsp; output power = <span class="m">2πNT<sub>sh</sub> / 60</span></p>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h4>Worked example</h4><span class="bloom ap">Apply</span></div>
+      <p style="margin-top:0">The same 4-pole, lap-wound motor (Z = 480, Φ = 0.02 Wb) carries an armature current of 50 A. Find the electromagnetic torque.</p>
+      <p><b>Given:</b> P = 4, Z = 480, A = 4, Φ = 0.02 Wb, I<sub>a</sub> = 50 A</p>
+      <p><b>Formula:</b> T = (PZ / 2πA) × Φ × I<sub>a</sub></p>
+      <p><b>Step 1:</b> PZ / 2πA = (4 × 480) / (2 × 3.1416 × 4) = 1920 / 25.133 = 76.39</p>
+      <p><b>Step 2:</b> T = 76.39 × 0.02 × 50 = 76.39 × 1.0</p>
+      <p><b>Answer:</b> T ≈ <b>76.4 N·m</b> (electromagnetic torque). The shaft torque will be somewhat less because of losses.</p>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h4>Torque calculator</h4><span class="bloom ap">Apply</span></div>
+      <div class="ctrl"><label for="tP">Poles P</label><input type="range" id="tP" min="2" max="8" step="2" value="4"><output id="tPo"></output></div>
+      <div class="ctrl"><label for="tZ">Conductors Z</label><input type="range" id="tZ" min="120" max="1200" step="12" value="480"><output id="tZo"></output></div>
+      <div class="ctrl"><label for="tF">Flux Φ (Wb)</label><input type="range" id="tF" min="0.005" max="0.05" step="0.001" value="0.02"><output id="tFo"></output></div>
+      <div class="ctrl"><label for="tI">Current I<sub>a</sub> (A)</label><input type="range" id="tI" min="0" max="100" step="1" value="50"><output id="tIo"></output></div>
+      <div class="row" style="margin:8px 0"><span>Winding:</span><div class="seg" id="tW"><button aria-pressed="true" data-v="lap">Lap (A = P)</button><button aria-pressed="false" data-v="wave">Wave (A = 2)</button></div></div>
+      <div class="formula" id="tOut" style="font-size:1.25rem"></div>
+    </div>
+    <div class="quiz" data-quiz="q23"></div>
+    <div class="complete-bar"><button class="btn mark" data-sec="2.3">Mark section complete</button></div>
+  </section>
+
+  <section class="sec" id="s-2-4">
+    <div class="sec-head"><span class="sn">2.4</span><h3>Module 2 activities</h3></div>
+    <div class="panel">
+      <div class="panel-head"><h4>Symbol matching</h4><span class="bloom re">Remember</span></div>
+      <p style="margin-top:0">Choose the correct meaning and unit for each symbol.</p>
+      <div id="symMatch"></div>
+      <div class="row" style="margin-top:10px"><button class="btn primary" id="symCheck">Check</button><button class="btn" id="symReset">Reset</button></div>
+      <div id="symOut" aria-live="polite"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h4>Relationship graphs</h4><span class="bloom an">Analyze</span></div>
+      <p style="margin-top:0">Choose a relationship and move the slider. Everything not shown is held constant.</p>
+      <div class="seg" id="relSel" role="group" aria-label="Relationship"><button aria-pressed="true" data-v="EN">E<sub>b</sub> vs N</button><button aria-pressed="false" data-v="EF">E<sub>b</sub> vs Φ</button><button aria-pressed="false" data-v="TI">T vs I<sub>a</sub></button><button aria-pressed="false" data-v="TS">T vs I<sub>a</sub> (series)</button><button aria-pressed="false" data-v="NF">N vs Φ</button></div>
+      <canvas class="plot" id="relPlot" style="margin-top:12px" aria-label="Relationship graph"></canvas>
+      <div class="ctrl"><label for="relX" id="relXl">x</label><input type="range" id="relX" min="0" max="100" value="50"><output id="relXo"></output></div>
+      <div class="note" id="relTxt" aria-live="polite"></div>
+    </div>
+    <div class="quiz" data-quiz="q24"></div>
+    <div class="complete-bar"><button class="btn mark" data-sec="2.4">Mark section complete</button></div>
+  </section>
+</div>
+<!-- =================== MODULE 3 =================== -->
+<div class="view" id="v-module3" data-view="module3" hidden>
+  <div class="mod-title">
+    <p class="kicker">Module 3</p>
+    <h2>Speed Control of D.C. Shunt Motor</h2>
+    <p>Three practical ways to make a shunt motor run faster or slower, and how to choose between them.</p>
+  </div>
+
+  <section class="sec" id="s-3-1">
+    <div class="sec-head"><span class="sn">3.1</span><h3>Introduction to speed control</h3></div>
+    <p>Speed control means deliberately changing the speed of a motor, while it carries its load, to suit the job. Industry needs this constantly:</p>
+    <ul>
+      <li>a lathe turns slowly for a large diameter workpiece and fast for a small one;</li>
+      <li>a lift must start smoothly, run at a steady speed and slow down before stopping;</li>
+      <li>rolling mills, paper mills and textile machines must match the speeds of several rollers;</li>
+      <li>conveyors and pumps change speed to change the rate of production or flow.</li>
+    </ul>
+    <h4>Where the speed relation comes from</h4>
+    <p>From Module 2, <span class="m">E<sub>b</sub> = V − I<sub>a</sub>R<sub>a</sub></span>, and for a given motor <span class="m">E<sub>b</sub> ∝ ΦN</span>. Putting them together:</p>
+    <div class="formula">N ∝ <span class="frac"><span>E<sub>b</sub></span><span>Φ</span></span> = <span class="frac"><span>V − I<sub>a</sub>R<sub>a</sub></span><span>Φ</span></span></div>
+    <p>This is an approximate, steady-state relationship for a motor of fixed construction (fixed <span class="m">P</span>, <span class="m">Z</span>, <span class="m">A</span>). It shows exactly three “handles” for changing speed:</p>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>What we change</th><th>Method</th><th>Effect on speed</th></tr></thead>
+      <tbody>
+        <tr><th>Flux Φ</th><td>Field (flux) control</td><td>Less flux gives more speed (above normal speed)</td></tr>
+        <tr><th>Resistance in armature circuit</th><td>Armature resistance (rheostatic) control</td><td>More resistance gives less speed (below normal speed)</td></tr>
+        <tr><th>Voltage V across armature</th><td>Armature voltage control</td><td>Less voltage gives less speed (below normal speed)</td></tr>
+      </tbody>
+    </table></div>
+    <p>For comparing two operating conditions of the same motor, the useful working form is:</p>
+    <div class="formula"><span class="frac"><span>N<sub>2</sub></span><span>N<sub>1</sub></span></span> = <span class="frac"><span>E<sub>b2</sub></span><span>E<sub>b1</sub></span></span> × <span class="frac"><span>Φ<sub>1</sub></span><span>Φ<sub>2</sub></span></span></div>
+    <div class="quiz" data-quiz="q31"></div>
+    <div class="complete-bar"><button class="btn mark" data-sec="3.1">Mark section complete</button></div>
+  </section>
+
+  <section class="sec" id="s-3-2">
+    <div class="sec-head"><span class="sn">3.2</span><h3>Field (flux) control method</h3></div>
+    <p>A variable resistance called the <b>shunt field regulator</b> (field rheostat) is connected <b>in series with the shunt field winding</b>. Increasing this resistance reduces the field current <span class="m">I<sub>sh</sub> = V / (R<sub>sh</sub> + R<sub>f</sub>)</span>, which reduces the flux <span class="m">Φ</span>.</p>
+    <p>Because <span class="m">N ∝ E<sub>b</sub>/Φ</span>, a weaker field makes the motor run <b>faster</b>. Here is why physically: when flux falls, back EMF falls at once, armature current rises sharply, torque rises above the load torque, and the motor accelerates until back EMF builds up again to balance the supply.</p>
+    <p>This is called <b>field weakening</b>. With the regulator at zero, the motor runs at its normal (rated) speed. Adding resistance can only reduce flux, so this method gives speeds <b>above</b> normal speed only.</p>
+    <div class="panel sc" data-method="field">
+      <div class="panel-head"><h4>Simulation: field control</h4><span class="bloom ap">Apply</span></div>
+    </div>
+    <div class="warnbox">
+      <p><b>Practical limits.</b> Very weak fields cause unstable running and heavy sparking at the commutator (poor commutation), and the higher armature current at the same load may overheat the armature. Mechanical stress on the rotor rises with speed. In practice field control is used up to about 2 to 3 times normal speed.</p>
+      <p><b>Never open the field circuit of a running shunt motor.</b> Flux would collapse to a small residual value and the motor could race to a dangerously high speed. Field-failure protection (the no-volt coil of a 4-point or 3-point starter) guards against this.</p>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h4>Worked example</h4><span class="bloom ap">Apply</span></div>
+      <p style="margin-top:0">A 220 V shunt motor has R<sub>a</sub> = 0.5 Ω. It runs at 1000 rpm taking an armature current of 20 A. The field is weakened so that flux becomes 80% of its original value, and the armature current rises to 25 A. Find the new speed.</p>
+      <p>E<sub>b1</sub> = 220 − 20 × 0.5 = 210 V &nbsp;&nbsp; E<sub>b2</sub> = 220 − 25 × 0.5 = 207.5 V</p>
+      <p>N<sub>2</sub> = N<sub>1</sub> × (E<sub>b2</sub>/E<sub>b1</sub>) × (Φ<sub>1</sub>/Φ<sub>2</sub>) = 1000 × (207.5/210) × (1/0.8) = 1000 × 0.988 × 1.25</p>
+      <p><b>N<sub>2</sub> ≈ 1235 rpm</b>. Reducing flux by 20% raised the speed by about 23%.</p>
+    </div>
+    <div class="quiz" data-quiz="q32"></div>
+    <div class="complete-bar"><button class="btn mark" data-sec="3.2">Mark section complete</button></div>
+  </section>
+
+  <section class="sec" id="s-3-3">
+    <div class="sec-head"><span class="sn">3.3</span><h3>Armature resistance control method</h3></div>
+    <p>A variable resistance <span class="m">R<sub>ext</sub></span>, called the <b>armature controller</b>, is connected <b>in series with the armature</b>. The shunt field stays connected directly across the supply, so the flux does not change.</p>
+    <p>The full armature current flows through <span class="m">R<sub>ext</sub></span> and drops a voltage <span class="m">I<sub>a</sub>R<sub>ext</sub></span> across it. Less voltage is left for the armature, so back EMF and speed fall:</p>
+    <div class="formula">N ∝ V − I<sub>a</sub>(R<sub>a</sub> + R<sub>ext</sub>) &nbsp;&nbsp;(Φ constant)</div>
+    <p>Increasing <span class="m">R<sub>ext</sub></span> therefore gives speeds <b>below</b> normal speed. Current path: supply positive terminal → armature controller → armature → supply negative terminal; the field current takes its own parallel path through the shunt field.</p>
+    <div class="panel sc" data-method="arm">
+      <div class="panel-head"><h4>Simulation: armature resistance control</h4><span class="bloom ap">Apply</span></div>
+    </div>
+    <div class="warnbox">
+      <p><b>Limitations.</b> (1) Large power loss <span class="m">I<sub>a</sub>²R<sub>ext</sub></span> in the controller, so efficiency is poor, especially at low speed. (2) Poor speed regulation: because the drop <span class="m">I<sub>a</sub>R<sub>ext</sub></span> depends on load, speed changes a lot when the load changes. (3) The controller must carry full armature current, so it is bulky and needs cooling. (4) Speeds only below normal.</p>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h4>Worked example</h4><span class="bloom ap">Apply</span></div>
+      <p style="margin-top:0">The same motor (220 V, R<sub>a</sub> = 0.5 Ω, 1000 rpm at I<sub>a</sub> = 20 A). A resistance of 4.5 Ω is added in series with the armature. The load torque is unchanged, so I<sub>a</sub> stays 20 A. Find the new speed and the loss in the resistance.</p>
+      <p>E<sub>b2</sub> = 220 − 20 × (0.5 + 4.5) = 220 − 100 = 120 V</p>
+      <p>Flux is constant, so N<sub>2</sub> = 1000 × (120/210) = <b>571 rpm</b></p>
+      <p>Loss in the added resistance = 20² × 4.5 = <b>1800 W</b>, out of an armature input of 220 × 20 = 4400 W. About 41% of the input is wasted as heat.</p>
+    </div>
+    <div class="quiz" data-quiz="q33"></div>
+    <div class="complete-bar"><button class="btn mark" data-sec="3.3">Mark section complete</button></div>
+  </section>
+
+  <section class="sec" id="s-3-4">
+    <div class="sec-head"><span class="sn">3.4</span><h3>Armature voltage control method</h3></div>
+    <p>The <b>field is kept excited from a separate, constant D.C. supply</b> so that flux stays constant, and the <b>voltage applied to the armature is varied</b>. With Φ constant:</p>
+    <div class="formula">N ∝ V − I<sub>a</sub>R<sub>a</sub> &nbsp;&nbsp;(Φ constant)</div>
+    <p>Since <span class="m">I<sub>a</sub>R<sub>a</sub></span> is small, speed is almost proportional to armature voltage. Lower voltage gives lower speed; raising the voltage back to rated voltage gives rated speed. Speed can be varied smoothly from near zero up to normal speed.</p>
+    <p>The variable D.C. voltage can come from:</p>
+    <ul>
+      <li>a <b>controlled rectifier</b> (thyristor converter) fed from the A.C. mains, the most common method today;</li>
+      <li>a <b>D.C. chopper</b> when the source is a battery, as in battery vehicles;</li>
+      <li>the older <b>Ward-Leonard system</b>, where a motor-driven D.C. generator with an adjustable field supplies the armature.</li>
+    </ul>
+    <div class="panel sc" data-method="volt">
+      <div class="panel-head"><h4>Simulation: armature voltage control</h4><span class="bloom ap">Apply</span></div>
+    </div>
+    <div class="warnbox"><p><b>Safe operation.</b> Armature voltage must not exceed rated voltage, and the controller should limit armature current to a safe value during starting and acceleration. Because the field is kept at full strength, the motor can deliver rated torque at every speed (a <b>constant-torque</b> drive).</p></div>
+    <div class="panel">
+      <div class="panel-head"><h4>Worked example</h4><span class="bloom ap">Apply</span></div>
+      <p style="margin-top:0">The same motor (R<sub>a</sub> = 0.5 Ω, 1000 rpm at 220 V and I<sub>a</sub> = 20 A) has its armature voltage reduced to 110 V with field current held constant. Load torque is unchanged. Find the new speed.</p>
+      <p>Φ and load torque constant, so I<sub>a</sub> stays 20 A. E<sub>b2</sub> = 110 − 20 × 0.5 = 100 V</p>
+      <p>N<sub>2</sub> = 1000 × (100/210) = <b>476 rpm</b>. No resistor wastes power here; only the small armature copper loss remains.</p>
+    </div>
+    <div class="quiz" data-quiz="q34"></div>
+    <div class="complete-bar"><button class="btn mark" data-sec="3.4">Mark section complete</button></div>
+  </section>
+
+  <section class="sec" id="s-3-5">
+    <div class="sec-head"><span class="sn">3.5</span><h3>Comparison of speed-control methods</h3></div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Point</th><th>Field (flux) control</th><th>Armature resistance control</th><th>Armature voltage control</th></tr></thead>
+      <tbody>
+        <tr><th>Principle</th><td>Vary Φ; N ∝ 1/Φ</td><td>Vary voltage drop in series resistance</td><td>Vary armature voltage with Φ constant</td></tr>
+        <tr><th>Circuit arrangement</th><td>Rheostat in series with shunt field</td><td>Rheostat in series with armature</td><td>Variable D.C. source to armature, separate field supply</td></tr>
+        <tr><th>Speed range</th><td>Above normal speed only</td><td>Below normal speed only</td><td>From near zero up to normal speed, smooth</td></tr>
+        <tr><th>Efficiency</th><td>High (field current is small, little loss)</td><td>Low (large I<sub>a</sub>²R<sub>ext</sub> loss)</td><td>High</td></tr>
+        <tr><th>Speed regulation</th><td>Good</td><td>Poor; speed varies with load</td><td>Good</td></tr>
+        <tr><th>Cost and complexity</th><td>Low; small, cheap rheostat</td><td>Low first cost, but bulky rheostat</td><td>High; converter or chopper needed</td></tr>
+        <tr><th>Advantages</th><td>Simple, cheap, efficient, fine control</td><td>Simple; speed below normal possible</td><td>Wide, smooth range; efficient; rated torque at all speeds</td></tr>
+        <tr><th>Limitations</th><td>No speed below normal; poor commutation and instability at weak field; danger if field opens</td><td>Wasteful; poor regulation; not for long-period low-speed running</td><td>Costly equipment; needs separate field supply</td></tr>
+        <tr><th>Typical applications</th><td>Machine tools needing speeds above base; fans and blowers trimming speed</td><td>Short-time low-speed duty: cranes, hoists, small drives, older traction</td><td>Rolling and paper mills, lifts, precision machine tools, battery vehicles</td></tr>
+      </tbody>
+    </table></div>
+    <div class="panel">
+      <div class="panel-head"><h4>Scenario challenge: pick the method</h4><span class="bloom an">Analyze</span></div>
+      <p style="margin-top:0">Read each situation and choose the best speed-control method. The feedback explains the reasoning.</p>
+      <div class="quiz" data-quiz="q35s" style="margin:0"></div>
+    </div>
+    <div class="complete-bar"><button class="btn mark" data-sec="3.5">Mark section complete</button></div>
+  </section>
+
+  <section class="sec" id="s-3-6">
+    <div class="sec-head"><span class="sn">3.6</span><h3>Module 3 activities</h3></div>
+    <p>Use <span class="m">N<sub>2</sub>/N<sub>1</sub> = (E<sub>b2</sub>/E<sub>b1</sub>) × (Φ<sub>1</sub>/Φ<sub>2</sub>)</span> for the numerical questions. Round answers to the nearest whole rpm.</p>
+    <div class="quiz" data-quiz="q36"></div>
+    <div class="complete-bar"><button class="btn mark" data-sec="3.6">Mark section complete</button></div>
+  </section>
+</div>
+
+<!-- =================== LAB =================== -->
+<div class="view" id="v-lab" data-view="lab" hidden>
+  <div class="mod-title">
+    <p class="kicker">Virtual laboratory</p>
+    <h2>D.C. Shunt Motor Test Bench</h2>
+    <p>Start the motor, load it and control its speed. Try starting it without a starter resistance first, and watch what happens to the current.</p>
+  </div>
+  <section class="sec" id="s-lab">
+    <div class="note"><p><b>Machine under test (simulated):</b> 220 V, 10 A rated armature current, about 1000 rpm, R<sub>a</sub> = 0.5 Ω, shunt field resistance 220 Ω. Supply breaker trips above 60 A. Overspeed trip at 2000 rpm. This is a simplified model: field flux is taken proportional to field current (no saturation), armature inductance is neglected, and rotation on screen is slowed down so you can follow it. Readings are simulated values, not real measurements.</p></div>
+    <div class="lab">
+      <div>
+        <svg id="labMotor" viewBox="0 0 400 300" class="stage" role="img" aria-label="Animated motor and speed gauge"></svg>
+        <div class="readouts" id="labRO"></div>
+        <div id="labMsg" aria-live="polite"></div>
+        <canvas class="plot" id="labPlot" style="height:180px" aria-label="Speed and current over time"></canvas>
+        <p class="sim-tag">Trace: speed (green, rpm ÷ 10) and armature current (copper, A) over the last 12 seconds.</p>
+      </div>
+      <div class="lab-ctrls">
+        <fieldset>
+          <legend>Main switch</legend>
+          <div class="switch"><button class="btn big-switch" id="labSw" aria-pressed="false">Switch ON</button><button class="btn" id="labReset">Reset bench</button></div>
+        </fieldset>
+        <fieldset>
+          <legend>Supply and field</legend>
+          <div class="ctrl"><label for="lV">Supply voltage V</label><input type="range" id="lV" min="0" max="240" step="5" value="220"><output id="lVo"></output></div>
+          <div class="ctrl"><label for="lRf">Field rheostat R<sub>f</sub></label><input type="range" id="lRf" min="0" max="150" step="5" value="0"><output id="lRfo"></output></div>
+          <div class="chk"><input type="checkbox" id="lSep"><label for="lSep">Feed field from a separate constant 220 V supply</label></div>
+          <div class="chk"><input type="checkbox" id="lOpen"><label for="lOpen">Open the field circuit (fault)</label></div>
+        </fieldset>
+        <fieldset>
+          <legend>Armature circuit and load</legend>
+          <div class="ctrl"><label for="lRx">Armature / starter resistance R<sub>ext</sub></label><input type="range" id="lRx" min="0" max="10" step="0.5" value="5"><output id="lRxo"></output></div>
+          <div class="ctrl"><label for="lTL">Load torque T<sub>L</sub></label><input type="range" id="lTL" min="0" max="30" step="1" value="10"><output id="lTLo"></output></div>
+        </fieldset>
+        <fieldset>
+          <legend>Observations</legend>
+          <div class="row"><button class="btn primary" id="labRec">Record reading</button><button class="btn" id="labClr">Clear table</button></div>
+          <div class="tbl-wrap" style="margin:10px 0 0"><table><thead><tr><th>#</th><th>V</th><th>R<sub>f</sub></th><th>R<sub>ext</sub></th><th>T<sub>L</sub></th><th>I<sub>sh</sub></th><th>I<sub>a</sub></th><th>N</th></tr></thead><tbody id="labTbl"><tr><td colspan="8">No readings yet. Let the motor settle, then press Record reading.</td></tr></tbody></table></div>
+        </fieldset>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h4>Suggested experiments</h4><span class="bloom an">Analyze</span></div>
+      <ol>
+        <li><b>Starting current.</b> Set R<sub>ext</sub> to 0 and switch on. Then reset, set R<sub>ext</sub> to 5 Ω, switch on, and reduce R<sub>ext</sub> to 0 in steps as the speed builds. Compare the peak currents.</li>
+        <li><b>Load test.</b> With R<sub>ext</sub> = 0, record speed and current for load torques 0, 10, 20 and 30 N·m. Does a shunt motor keep nearly constant speed?</li>
+        <li><b>Field control.</b> At 10 N·m load, record speed for R<sub>f</sub> = 0, 50, 100 and 150 Ω. Watch how I<sub>a</sub> also rises.</li>
+        <li><b>Armature resistance control.</b> At 20 N·m load, record speed for R<sub>ext</sub> = 0, 2, 4 and 6 Ω.</li>
+        <li><b>Armature voltage control.</b> Tick “separate field supply”, then reduce V from 220 V to 60 V in steps. Now untick it and repeat: why does speed hardly change when the field is on the same supply?</li>
+        <li><b>Field failure.</b> With the motor running at light load, tick “open the field circuit” and watch the current and speed until a protection trips. Try it once with R<sub>ext</sub> = 0 and once with R<sub>ext</sub> = 5 Ω.</li>
+      </ol>
+    </div>
+    <div class="complete-bar"><button class="btn mark" data-sec="lab">Mark lab complete</button></div>
+  </section>
+</div>
+
+<!-- =================== FINAL =================== -->
+<div class="view" id="v-assessment" data-view="assessment" hidden>
+  <div class="mod-title">
+    <p class="kicker">Final assessment</p>
+    <h2>Test yourself on all three modules</h2>
+    <p>18 questions: recall, concepts, numericals and scenarios. Answer all of them, then submit to see your score, your performance by module, and explanations.</p>
+  </div>
+  <section class="sec" id="s-final">
+    <form id="finalForm" onsubmit="return false"></form>
+    <div class="row no-print" style="margin-top:16px"><button class="btn primary" id="finalSubmit">Submit assessment</button><span id="finalLeft" class="sim-tag"></span></div>
+    <div id="finalResult" aria-live="polite"></div>
+  </section>
+</div>
+
+<!-- =================== REVISION =================== -->
+<div class="view" id="v-revision" data-view="revision" hidden>
+  <div class="mod-title">
+    <p class="kicker">Revision resources</p>
+    <h2>Notes, formulas and glossary</h2>
+    <p>Everything you need for quick revision before a test. Print this page to keep a paper copy.</p>
+    <div class="row no-print"><button class="btn primary" id="printBtn">Print study notes</button><span class="sim-tag" id="printHint"></span></div>
+  </div>
+  <section class="sec" id="s-rev">
+    <h3>Revision sheet</h3>
+    <ul>
+      <li>A D.C. motor converts electrical energy into mechanical energy. It works on the <b>motor principle</b>: a current-carrying conductor in a magnetic field experiences a force <span class="m">F = BIL</span>.</li>
+      <li>Direction of force: <b>Fleming’s Left-Hand Rule</b> (First finger = Field, seCond finger = Current, thuMb = Motion).</li>
+      <li>Stator: yoke, poles (core and shoe), field winding. Rotor: armature core, armature winding, commutator, shaft. Brushes carry current to the commutator; bearings support the shaft.</li>
+      <li>The <b>commutator</b> reverses current in each coil as it passes the neutral axis, so torque stays unidirectional.</li>
+      <li>Types: separately excited; self-excited shunt, series, compound. Shunt is nearly constant-speed; series has very high starting torque and must never run without load; compound combines both.</li>
+      <li><b>Back EMF</b> is induced in the rotating armature and opposes the supply (Lenz’s law). <span class="m">V = E<sub>b</sub> + I<sub>a</sub>R<sub>a</sub></span>. It limits current and makes the motor self-regulating.</li>
+      <li>At starting <span class="m">E<sub>b</sub> = 0</span>, so <span class="m">I<sub>a</sub> = V/R<sub>a</sub></span> is very large; a starter adds series resistance to limit it.</li>
+      <li><span class="m">E<sub>b</sub> = PΦZN/60A</span> so <span class="m">E<sub>b</sub> ∝ ΦN</span>. &nbsp; <span class="m">T = (PZ/2πA)ΦI<sub>a</sub></span> so <span class="m">T ∝ ΦI<sub>a</sub></span>. Shaft torque is less than electromagnetic torque.</li>
+      <li>Speed: <span class="m">N ∝ (V − I<sub>a</sub>R<sub>a</sub>)/Φ</span>. Field control gives speeds above normal; armature resistance and armature voltage control give speeds below normal.</li>
+    </ul>
+
+    <h3>Formula reference</h3>
+    <div class="grid2">
+      <div class="formula-card"><b>Voltage equation</b><div class="formula">V = E<sub>b</sub> + I<sub>a</sub>R<sub>a</sub></div><p>Neglects brush drop. Use to find E<sub>b</sub> or I<sub>a</sub>.</p></div>
+      <div class="formula-card"><b>Starting current</b><div class="formula">I<sub>st</sub> = V / R<sub>a</sub></div><p>Because E<sub>b</sub> = 0 at standstill (no starter).</p></div>
+      <div class="formula-card"><b>Back EMF</b><div class="formula">E<sub>b</sub> = PΦZN / 60A</div><p>A = P (lap), A = 2 (wave). Φ in Wb, N in rpm.</p></div>
+      <div class="formula-card"><b>Torque</b><div class="formula">T = (PZ / 2πA) ΦI<sub>a</sub></div><p>N·m. T ∝ ΦI<sub>a</sub>; shunt T ∝ I<sub>a</sub>; series T ∝ I<sub>a</sub>².</p></div>
+      <div class="formula-card"><b>Mechanical power developed</b><div class="formula">P<sub>m</sub> = E<sub>b</sub>I<sub>a</sub> = 2πNT / 60</div><p>Watts. Links back EMF and torque.</p></div>
+      <div class="formula-card"><b>Speed relations</b><div class="formula">N ∝ (V − I<sub>a</sub>R<sub>a</sub>) / Φ</div><p>N<sub>2</sub>/N<sub>1</sub> = (E<sub>b2</sub>/E<sub>b1</sub>)(Φ<sub>1</sub>/Φ<sub>2</sub>)</p></div>
+      <div class="formula-card"><b>Shunt field current</b><div class="formula">I<sub>sh</sub> = V / (R<sub>sh</sub> + R<sub>f</sub>)</div><p>Line current of shunt motor: I<sub>L</sub> = I<sub>a</sub> + I<sub>sh</sub>.</p></div>
+      <div class="formula-card"><b>Force on conductor</b><div class="formula">F = BIL</div><p>Newtons. B in tesla, I in amperes, L in metres.</p></div>
+    </div>
+
+    <h3>Motor-type comparison chart</h3>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Type</th><th>Field connection</th><th>Starting torque</th><th>Speed</th><th>Uses</th></tr></thead>
+      <tbody>
+        <tr><th>Separately excited</th><td>Separate source</td><td>Medium</td><td>Constant, widely controllable</td><td>Precision drives, rolling mills</td></tr>
+        <tr><th>Shunt</th><td>Parallel with armature</td><td>Medium</td><td>Nearly constant</td><td>Lathes, fans, pumps, conveyors</td></tr>
+        <tr><th>Series</th><td>Series with armature</td><td>Very high</td><td>Varies widely; dangerous at no load</td><td>Traction, cranes, hoists</td></tr>
+        <tr><th>Cumulative compound</th><td>Shunt plus series</td><td>High</td><td>Falls moderately with load</td><td>Presses, shears, lifts</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>Speed-control comparison chart</h3>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Method</th><th>Speed range</th><th>Efficiency</th><th>Regulation</th><th>Cost</th><th>Uses</th></tr></thead>
+      <tbody>
+        <tr><th>Field control</th><td>Above normal</td><td>High</td><td>Good</td><td>Low</td><td>Machine tools, blowers</td></tr>
+        <tr><th>Armature resistance</th><td>Below normal</td><td>Low</td><td>Poor</td><td>Low</td><td>Cranes, hoists, short duty</td></tr>
+        <tr><th>Armature voltage</th><td>Zero to normal</td><td>High</td><td>Good</td><td>High</td><td>Mills, lifts, battery vehicles</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>Glossary</h3>
+    <input class="search no-print" id="glossSearch" type="search" placeholder="Filter terms" aria-label="Filter glossary terms">
+    <dl class="gloss" id="gloss"></dl>
+
+    <h3>Frequently asked questions</h3>
+    <div id="faq"></div>
+  </section>
+  <div class="complete-bar"><button class="btn mark" data-sec="rev">Mark revision complete</button></div>
+</div>
+</main>
+</div>
+<script>
+"use strict";
+/* ================= utilities ================= */
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const NS="http://www.w3.org/2000/svg";
+function svgEl(tag,attrs={},parent){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e;}
+function txt(parent,x,y,s,attrs={}){const t=svgEl("text",Object.assign({x,y,fill:"var(--ink)","font-size":14},attrs),parent);t.textContent=s;return t;}
+const store={get(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const fmt=(v,d=1)=>Number.isFinite(v)?v.toLocaleString("en-IN",{minimumFractionDigits:d,maximumFractionDigits:d}):"–";
+const reduceMotion=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+function seg(id,cb){const g=document.getElementById(id);g.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;$$("button",g).forEach(x=>x.setAttribute("aria-pressed",x===b?"true":"false"));cb(b.dataset.v,b);});return ()=>$("button[aria-pressed=true]",g).dataset.v;}
+
+/* ================= structure, navigation, progress ================= */
+const VIEWS=[
+ {id:"home",label:"Home",num:"H"},
+ {id:"module1",label:"Module 1: Construction and types",num:"1",secs:[["1.1","Introduction","s-1-1"],["1.2","Construction","s-1-2"],["1.3","Working principle","s-1-3"],["1.4","Types of D.C. motors","s-1-4"],["1.5","Applications","s-1-5"],["1.6","Review activities","s-1-6"]]},
+ {id:"module2",label:"Module 2: Back EMF and torque",num:"2",secs:[["2.1","Back EMF","s-2-1"],["2.2","Back EMF equation","s-2-2"],["2.3","Torque equation","s-2-3"],["2.4","Activities","s-2-4"]]},
+ {id:"module3",label:"Module 3: Speed control",num:"3",secs:[["3.1","Introduction","s-3-1"],["3.2","Field control","s-3-2"],["3.3","Armature resistance control","s-3-3"],["3.4","Armature voltage control","s-3-4"],["3.5","Comparison","s-3-5"],["3.6","Activities","s-3-6"]]},
+ {id:"lab",label:"Virtual laboratory",num:"L",secs:[["lab","Shunt motor test bench","s-lab"]]},
+ {id:"assessment",label:"Final assessment",num:"A",secs:[["final","18-question test","s-final"]]},
+ {id:"revision",label:"Revision resources",num:"R",secs:[["rev","Notes, formulas, glossary","s-rev"]]}
+];
+const ALL_SECS=VIEWS.flatMap(v=>(v.secs||[]).map(s=>s[0]));
+let done=new Set(store.get("dcm-progress-v1")||[]);
+function buildToc(){
+  const ol=document.createElement("ol");
+  VIEWS.forEach(v=>{
+    const li=document.createElement("li");
+    li.innerHTML=`<button class="toc-view" data-go="${v.id}"><span class="num">${v.num}</span><span>${v.label}</span></button>`;
+    if(v.secs&&v.secs.length>1){
+      const sub=document.createElement("ol");sub.className="toc-secs";
+      v.secs.forEach(s=>{const l=document.createElement("li");l.innerHTML=`<button class="toc-sec" data-go="${v.id}" data-sec="${s[2]}"><span class="tick" data-tick="${s[0]}"></span><span>${s[0]} ${s[1]}</span></button>`;sub.appendChild(l);});
+      li.appendChild(sub);
+    } else if(v.secs){ $(".toc-view",li).insertAdjacentHTML("beforeend",`<span class="tick" data-tick="${v.secs[0][0]}" style="margin-left:auto"></span>`); }
+    ol.appendChild(li);
+  });
+  $("#toc").appendChild(ol);
+}
+function renderProgress(){
+  const n=ALL_SECS.filter(s=>done.has(s)).length, t=ALL_SECS.length, pct=Math.round(n/t*100);
+  $("#progTxt").textContent=`${n} of ${t} done`;
+  $("#progFill").style.width=pct+"%"; $("#miniFill").style.width=pct+"%";
+  $("#progBar").setAttribute("aria-valuenow",pct);
+  $$("[data-tick]").forEach(e=>e.classList.toggle("done",done.has(e.dataset.tick)));
+  $$(".mark").forEach(b=>{const d=done.has(b.dataset.sec);b.classList.toggle("done",d);b.textContent=d?(b.dataset.sec.length>3?"Completed":"Section completed"):(b.dataset.sec==="lab"?"Mark lab complete":b.dataset.sec==="rev"?"Mark revision complete":"Mark section complete");b.setAttribute("aria-pressed",d?"true":"false");});
+  $$(".pp[data-view]").forEach(p=>{const v=VIEWS.find(x=>x.id===p.dataset.view);const c=v.secs.filter(s=>done.has(s[0])).length;p.textContent=`${c} of ${v.secs.length} sections complete`;});
+}
+function setDone(sec,val=true){val?done.add(sec):done.delete(sec);store.set("dcm-progress-v1",[...done]);renderProgress();}
+let currentView="home";
+const viewHooks={};
+function go(view,secId){
+  if(!VIEWS.find(v=>v.id===view))view="home";
+  $$(".view").forEach(v=>v.hidden=v.dataset.view!==view);
+  $$(".toc-view").forEach(b=>b.dataset.go===view?b.setAttribute("aria-current","page"):b.removeAttribute("aria-current"));
+  currentView=view;
+  if(location.hash.slice(1)!==view){try{history.replaceState(null,"","#"+view)}catch(e){}}
+  closeMenu();
+  if(viewHooks[view])viewHooks[view]();
+  if(secId){const el=document.getElementById(secId);if(el)requestAnimationFrame(()=>el.scrollIntoView({block:"start"}));}
+  else window.scrollTo(0,0);
+  $("#main").focus({preventScroll:true});
+}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-go]");if(!b)return;e.preventDefault();go(b.dataset.go,b.dataset.sec);});
+document.addEventListener("click",e=>{const b=e.target.closest(".mark");if(!b)return;setDone(b.dataset.sec,!done.has(b.dataset.sec));});
+window.addEventListener("hashchange",()=>{const h=location.hash.slice(1);if(h&&h!==currentView)go(h);});
+function closeMenu(){$("#side").classList.remove("open");$("#menuBtn").setAttribute("aria-expanded","false");}
+$("#menuBtn").addEventListener("click",()=>{const o=$("#side").classList.toggle("open");$("#menuBtn").setAttribute("aria-expanded",o?"true":"false");});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeMenu();});
+document.addEventListener("click",e=>{if($("#side").classList.contains("open")&&!e.target.closest("#side")&&!e.target.closest("#menuBtn"))closeMenu();});
+$("#resetProg").addEventListener("click",()=>{if(confirm("Clear all your saved progress?")){done=new Set();store.set("dcm-progress-v1",[]);renderProgress();}});
+(function theme(){const saved=store.get("dcm-theme");if(saved)document.documentElement.dataset.theme=saved;
+  $("#themeBtn").addEventListener("click",()=>{const cur=document.documentElement.dataset.theme||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");const nx=cur==="dark"?"light":"dark";document.documentElement.dataset.theme=nx;store.set("dcm-theme",nx);document.dispatchEvent(new Event("themechange"));});})();
+$("#main").setAttribute("tabindex","-1");
+(function pathCards(){const box=$("#pathCards");const d={module1:"Parts, Fleming’s rule, commutator, types, applications",module2:"V = Eb + IaRa, Eb equation, torque equation",module3:"Field, armature resistance and armature voltage control",lab:"Start, load and control a simulated shunt motor",assessment:"18 mixed questions with module-wise score",revision:"Formula sheet, charts, glossary, FAQ, print"};
+  VIEWS.filter(v=>v.id!=="home").forEach(v=>{const b=document.createElement("button");b.dataset.go=v.id;b.innerHTML=`<b>${v.label}</b><span>${d[v.id]}</span><div class="pp" data-view="${v.id}"></div>`;box.appendChild(b);});})();
+
+/* ================= quiz engine ================= */
+const norm=s=>String(s).toLowerCase().replace(/[^a-z0-9.\-]/g,"");
+function checkQ(q,val){
+  if(q.t==="mcq"||q.t==="tf")return Number(val)===q.a;
+  if(q.t==="fill")return q.a.some(a=>norm(a)===norm(val));
+  if(q.t==="num"){const v=parseFloat(String(val).replace(/,/g,""));if(!Number.isFinite(v))return false;const tol=q.tol!=null?q.tol:0.02;return Math.abs(v-q.a)<=Math.abs(q.a)*tol+1e-9;}
+  return false;
+}
+function qInput(q,name){
+  if(q.t==="mcq"||q.t==="tf"){const opts=q.t==="tf"?["True","False"]:q.o;
+    return `<div class="opts" role="radiogroup">${opts.map((o,i)=>`<label class="opt"><input type="radio" name="${name}" value="${i}"><span>${o}</span></label>`).join("")}</div>`;}
+  return `<div class="fill-in"><input type="${q.t==="num"?"text":"text"}" inputmode="${q.t==="num"?"decimal":"text"}" name="${name}" aria-label="Your answer" autocomplete="off">${q.u?`<span>${q.u}</span>`:""}</div>`;
+}
+const TYPE_LABEL={mcq:"Multiple choice",tf:"True or false",fill:"Fill in the blank",num:"Numerical"};
+function correctText(q){if(q.t==="mcq")return q.o[q.a];if(q.t==="tf")return q.a===0?"True":"False";if(q.t==="fill")return q.a[0];return q.a+(q.u?" "+q.u:"");}
+function renderQuiz(box,qs,secId){
+  box.innerHTML=`<div class="panel-head"><h4 style="margin:0">Knowledge check</h4><span class="quiz-sum" aria-live="polite"></span></div>`;
+  const state=qs.map(()=>false);
+  const upd=()=>{const n=state.filter(Boolean).length;$(".quiz-sum",box).textContent=`${n} of ${qs.length} correct`;if(n===qs.length&&secId&&!done.has(secId))setDone(secId,true);};
+  qs.forEach((q,i)=>{
+    const name=box.dataset.quiz+"_"+i;
+    if(q.t==="tf"&&typeof q.a==="boolean")q.a=q.a?0:1;
+    const d=document.createElement("div");d.className="q";
+    d.innerHTML=`<div class="q-top"><p class="qt">${i+1}. ${q.q}</p><span class="q-type">${TYPE_LABEL[q.t]}</span></div>${qInput(q,name)}<div class="q-actions"><button class="btn sm primary qc">Check</button><button class="btn sm qr" hidden>Try again</button></div><div class="fb" aria-live="polite"></div>`;
+    const fb=$(".fb",d);
+    const getVal=()=>{if(q.t==="mcq"||q.t==="tf"){const r=$("input:checked",d);return r?r.value:null;}return $("input",d).value.trim();};
+    $(".qc",d).addEventListener("click",()=>{
+      const v=getVal(); if(v===null||v===""){fb.className="fb show wrong";fb.innerHTML="Choose or type an answer first.";return;}
+      const ok=checkQ(q,v); state[i]=state[i]||ok;
+      $$(".opt",d).forEach((o,j)=>{o.classList.remove("right","wrong");if(j===q.a&&ok)o.classList.add("right");if(String(j)===v&&!ok)o.classList.add("wrong");});
+      fb.className="fb show "+(ok?"right":"wrong");
+      fb.innerHTML=(ok?"<b>Correct.</b> ":"<b>Not quite.</b> ")+(ok?q.e:(q.h?q.h+" ":"")+"Think it through and try again, or reveal the answer.");
+      if(!ok){fb.innerHTML+=` <button class="btn sm qs" style="margin-left:6px">Show answer</button>`;$(".qs",fb).addEventListener("click",()=>{fb.innerHTML=`<b>Answer: ${correctText(q)}.</b> ${q.e}`;});}
+      $(".qr",d).hidden=false; upd();
+    });
+    $(".qr",d).addEventListener("click",()=>{$$("input",d).forEach(x=>{if(x.type==="radio")x.checked=false;else x.value="";});$$(".opt",d).forEach(o=>o.classList.remove("right","wrong"));fb.className="fb";$(".qr",d).hidden=true;});
+    box.appendChild(d);
+  });
+  upd();
+}
+/* ================= question data ================= */
+const QUIZ={
+q11:{sec:"1.1",qs:[
+ {t:"mcq",q:"A D.C. motor converts:",o:["Electrical energy into mechanical energy","Mechanical energy into electrical energy","A.C. into D.C.","Chemical energy into electrical energy"],a:0,e:"A motor takes electrical input from a D.C. supply and delivers mechanical output at its shaft. A generator does the reverse."},
+ {t:"tf",q:"The mechanical output power of a motor is always less than its electrical input power.",a:true,e:"Some input is always lost as heat in the windings and core, and as friction. So efficiency is always below 100%."},
+ {t:"fill",q:"The output of a motor appears at the rotating shaft as ________ energy.",a:["mechanical"],e:"Mechanical energy: torque × speed at the shaft."},
+ {t:"mcq",q:"A D.C. motor is usually chosen for a crane because it offers:",o:["High starting torque and smooth speed control","The lowest possible price","No need for any maintenance","Operation directly from A.C. mains"],a:0,e:"Cranes must start heavy loads from rest and position them gently, which needs high starting torque and easy speed control."}
+]},
+q12:{sec:"1.2",qs:[
+ {t:"mcq",q:"Which part reverses the current in each armature coil at the right moment?",o:["Commutator","Yoke","Pole shoe","Bearing"],a:0,e:"The commutator (with the brushes) reverses the coil current as the coil passes the neutral axis, keeping torque in one direction."},
+ {t:"mcq",q:"The armature core is built from thin laminations in order to:",o:["Reduce eddy current loss","Increase the weight of the rotor","Reduce friction in the bearings","Increase the resistance of the armature winding"],a:0,e:"Thin, insulated laminations break up the paths of eddy currents induced in the rotating core, reducing iron loss."},
+ {t:"tf",q:"Brushes are usually made of carbon or graphite.",a:true,e:"Carbon and graphite conduct well, are self-lubricating and wear gently against the copper commutator."},
+ {t:"fill",q:"The ________ spreads the flux evenly over the air gap and holds the field coil in place.",a:["pole shoe","poleshoe","pole shoes"],e:"The pole shoe is the curved end of the pole facing the armature."},
+ {t:"mcq",q:"In small D.C. machines the yoke is commonly made of:",o:["Cast iron","Copper","Carbon","Mica"],a:0,e:"Cast iron is cheap and strong. Larger machines use cast steel or rolled steel, which carry flux better for the same weight."}
+]},
+q13:{sec:"1.3",qs:[
+ {t:"mcq",q:"In Fleming’s Left-Hand Rule, the second finger points in the direction of:",o:["Current","Magnetic field","Force","Rotation of the armature"],a:0,e:"First finger = Field, seCond finger = Current, thuMb = Motion (force)."},
+ {t:"mcq",q:"A conductor lies between an N pole on the left and an S pole on the right. Its current flows out of the page (⊙). The force on it is:",o:["Upwards","Downwards","Towards the N pole","Zero"],a:0,e:"Field points left to right. For current into the page the force is downwards, so for current out of the page it is upwards. Try it in the simulation."},
+ {t:"tf",q:"Without a commutator, a single coil in a D.C. motor would keep rotating in one direction.",a:false,e:"Without current reversal the torque reverses every half turn, so the coil swings back and settles at the neutral position. Try “No commutator” in the animation."},
+ {t:"num",q:"A conductor 0.25 m long carries 10 A at right angles to a field of 0.8 T. Find the force on it.",a:2,u:"N",tol:0.01,e:"F = BIL = 0.8 × 10 × 0.25 = 2 N."},
+ {t:"mcq",q:"The torque on a single coil is zero when its sides are:",o:["In the neutral zone, midway between the poles","Directly under the pole centres","Carrying maximum current","Moving at maximum speed"],a:0,e:"In the neutral zone the force on each side points straight through the shaft centre, so it has no turning effect."}
+]},
+q14:{sec:"1.4",qs:[
+ {t:"mcq",q:"In a D.C. shunt motor, the field winding is connected:",o:["In parallel with the armature","In series with the armature","To a separate battery","Between the brushes and the shaft"],a:0,e:"‘Shunt’ means parallel: the field winding is connected across the armature terminals."},
+ {t:"mcq",q:"Which motor has the highest starting torque?",o:["Series motor","Shunt motor","Separately excited motor","All are equal"],a:0,e:"In a series motor flux rises with current, so T ∝ Ia² (before saturation), giving very high starting torque."},
+ {t:"tf",q:"A D.C. series motor can be safely run with no mechanical load.",a:false,e:"At no load the current and flux become very small, so speed rises to dangerous values. Series motors are always started and run with load connected, preferably by gears rather than belts."},
+ {t:"mcq",q:"The field winding of a series motor has:",o:["A few turns of thick wire","Many turns of thin wire","No turns, only magnets","A single turn of thin wire"],a:0,e:"It carries the full armature current, so it needs thick wire with low resistance; few turns are enough for the required ampere-turns."},
+ {t:"fill",q:"In a series motor, before saturation, torque is proportional to armature current raised to the power ____.",a:["2","two"],e:"T ∝ ΦIa and Φ ∝ Ia, so T ∝ Ia²."}
+]},
+q15:{sec:"1.5",qs:[
+ {t:"mcq",q:"Which motor is most suitable for a crane hoist?",o:["D.C. series motor","D.C. shunt motor","Differential compound motor","None of these"],a:0,e:"A hoist must lift a heavy load from rest, so the very high starting torque of the series motor suits it; the load is always connected."},
+ {t:"mcq",q:"A lathe needs a nearly constant speed even as the cutting load changes. Choose the motor.",o:["D.C. shunt motor","D.C. series motor","Any motor without a commutator","A motor with no field winding at all"],a:0,e:"A shunt motor’s flux is nearly constant, so its speed falls only slightly from no load to full load."},
+ {t:"mcq",q:"A punching press with a flywheel takes sudden heavy loads. Choose the motor.",o:["Cumulative compound motor","Series motor","Shunt motor with a weak field","Separately excited motor with the field open"],a:0,e:"The compound motor gives good starting and peak torque from its series field, and a safe no-load speed from its shunt field, letting the flywheel help with load peaks."},
+ {t:"mcq",q:"A cordless drill usually uses:",o:["A permanent magnet D.C. motor","A D.C. series motor with a 220 V supply","A large compound motor","A separately excited motor with a field battery"],a:0,e:"Battery tools use compact PMDC motors whose field comes from permanent magnets."},
+ {t:"tf",q:"A belt drive is unsuitable for a series motor.",a:true,e:"If the belt slips off or breaks, the motor suddenly has no load and may overspeed dangerously."}
+]},
+q16sort:{qs:[
+ {t:"mcq",q:"The field winding has a few turns of thick wire and carries the full armature current.",o:["Separately excited","Shunt","Series","Compound"],a:2,e:"Full armature current through the field means it is in series with the armature."},
+ {t:"mcq",q:"The field current comes from a battery that is not connected to the armature supply.",o:["Separately excited","Shunt","Series","Compound"],a:0,e:"An independent field source defines a separately excited motor."},
+ {t:"mcq",q:"Each pole carries two field windings whose fluxes add together.",o:["Separately excited","Shunt","Series","Compound"],a:3,e:"Shunt and series fields together, aiding each other: cumulative compound."},
+ {t:"mcq",q:"The field winding is connected directly across the armature terminals.",o:["Separately excited","Shunt","Series","Compound"],a:1,e:"Across the armature means in parallel: a shunt motor."},
+ {t:"mcq",q:"Its speed rises to a dangerous value if the load is suddenly removed.",o:["Separately excited","Shunt","Series","Compound"],a:2,e:"At no load a series motor’s flux collapses with the current, so speed rises sharply."}
+]},
+q16:{sec:"1.6",qs:[
+ {t:"mcq",q:"Which part is made of hard-drawn copper segments insulated from each other by mica?",o:["Commutator","Armature core","Yoke","Pole core"],a:0,e:"Commutator segments are copper; thin mica sheets insulate neighbouring segments."},
+ {t:"tf",q:"The yoke gives mechanical protection and also carries the magnetic flux between poles.",a:true,e:"The yoke is both the outer frame and part of the magnetic circuit."},
+ {t:"mcq",q:"If the field direction AND the armature current direction are both reversed, the direction of rotation:",o:["Stays the same","Reverses","Becomes zero","Keeps changing"],a:0,e:"Reversing one of them reverses the force; reversing both reverses it twice, so the direction is unchanged."},
+ {t:"mcq",q:"To reverse the direction of a D.C. shunt motor in practice, you should:",o:["Reverse either the armature or the field connections, not both","Reverse the supply polarity","Swap the two brushes on the same side","Remove the commutator"],a:0,e:"Reversing the supply reverses both field and armature current, so the direction does not change. Reverse just one of them."},
+ {t:"fill",q:"The stationary part of a motor is called the ________.",a:["stator"],e:"Stator: yoke, poles and field winding. The rotating part is the rotor or armature."}
+]},
+q21:{sec:"2.1",qs:[
+ {t:"mcq",q:"Back EMF opposes the supply voltage because of:",o:["Lenz’s law","Ohm’s law","Fleming’s left-hand rule","Kirchhoff’s current law"],a:0,e:"Lenz’s law: an induced EMF always opposes the cause producing it."},
+ {t:"num",q:"A 230 V motor has Ra = 0.4 Ω and takes Ia = 25 A. Find the back EMF.",a:220,u:"V",tol:0.005,e:"Eb = V − IaRa = 230 − 25 × 0.4 = 230 − 10 = 220 V."},
+ {t:"num",q:"A 250 V motor has Ra = 0.25 Ω. Find the starting current if it is switched on directly without a starter.",a:1000,u:"A",tol:0.005,e:"At starting Eb = 0, so Ia = V/Ra = 250/0.25 = 1000 A."},
+ {t:"tf",q:"When the load on a running motor increases, its back EMF decreases slightly.",a:true,e:"Extra load slows the motor slightly; Eb ∝ N, so Eb falls and Ia rises to give more torque."},
+ {t:"mcq",q:"The main purpose of a starter is to:",o:["Limit armature current at starting, when Eb is zero","Increase the starting speed","Reverse the motor","Increase the back EMF at starting"],a:0,e:"With no back EMF at standstill, only the starter resistance (plus Ra) limits the current."}
+]},
+q22:{sec:"2.2",qs:[
+ {t:"num",q:"A 2-pole, wave-wound motor has 400 conductors and flux 0.03 Wb per pole. Find Eb at 1500 rpm.",a:300,u:"V",tol:0.005,e:"Wave winding: A = 2. Eb = (2 × 0.03 × 400 × 1500)/(60 × 2) = 36 000/120 = 300 V."},
+ {t:"mcq",q:"Flux is constant and speed is doubled. The back EMF:",o:["Doubles","Halves","Stays the same","Becomes four times"],a:0,e:"Eb ∝ ΦN, so with Φ constant Eb ∝ N."},
+ {t:"mcq",q:"For a wave-wound armature, the number of parallel paths A is:",o:["2","Equal to the number of poles","1","Equal to the number of conductors"],a:0,e:"Wave winding always has A = 2; lap winding has A = P."},
+ {t:"fill",q:"The number 60 in the back EMF equation converts revolutions per minute into revolutions per ________.",a:["second","sec","s"],e:"N/60 gives speed in revolutions per second."},
+ {t:"tf",q:"For a given motor, back EMF is proportional to the product of flux and speed.",a:true,e:"P, Z and A are fixed, so Eb ∝ ΦN."}
+]},
+q23:{sec:"2.3",qs:[
+ {t:"mcq",q:"For a given D.C. motor, electromagnetic torque is proportional to:",o:["Φ × Ia","Φ / Ia","N × Ia","V / Φ"],a:0,e:"T = (PZ/2πA)ΦIa, and PZ/2πA is constant for the machine."},
+ {t:"num",q:"A 4-pole, lap-wound motor (A = 4) has Z = 628, Φ = 0.025 Wb and Ia = 40 A. Find the electromagnetic torque (nearest N·m).",a:100,u:"N·m",tol:0.02,e:"PZ/2πA = (4 × 628)/(2π × 4) = 2512/25.13 ≈ 99.95. T = 99.95 × 0.025 × 40 ≈ 100 N·m."},
+ {t:"tf",q:"Shaft torque is greater than electromagnetic torque.",a:false,e:"Shaft torque is less, because part of the developed torque is used to overcome iron and mechanical losses."},
+ {t:"mcq",q:"In a shunt motor, armature current doubles. The torque:",o:["Doubles","Becomes four times","Stays the same","Halves"],a:0,e:"Flux is constant in a shunt motor, so T ∝ Ia."},
+ {t:"mcq",q:"In a series motor (below saturation), armature current doubles. The torque:",o:["Becomes four times","Doubles","Stays the same","Becomes eight times"],a:0,e:"T ∝ Ia², so 2² = 4 times."}
+]},
+q24:{sec:"2.4",qs:[
+ {t:"mcq",q:"The back EMF of a motor at standstill is:",o:["Zero","Equal to the supply voltage","Maximum","Equal to IaRa"],a:0,e:"Eb ∝ N, and N = 0 at standstill."},
+ {t:"mcq",q:"The armature current of a motor started without a starter is highest:",o:["At the instant of switching on","At full speed on no load","At rated speed on full load","When it is switched off"],a:0,e:"At switch-on Eb = 0, so Ia = V/Ra, the largest possible value."},
+ {t:"num",q:"A motor has Eb = 200 V and Ia = 30 A. Find the mechanical power developed in the armature.",a:6000,u:"W",tol:0.005,e:"Pm = EbIa = 200 × 30 = 6000 W."},
+ {t:"num",q:"A motor develops Eb = 210 V with Ia = 20 A at 1000 rpm. Using EbIa = 2πNT/60, find the electromagnetic torque.",a:40.1,u:"N·m",tol:0.02,e:"Pm = 210 × 20 = 4200 W. T = 60 × 4200 / (2π × 1000) = 252 000/6283 ≈ 40.1 N·m."},
+ {t:"tf",q:"If the field flux is suddenly reduced while the speed has not yet changed, the back EMF falls.",a:true,e:"Eb ∝ ΦN. With N momentarily fixed, lower Φ means lower Eb, which is why current and torque rise during field weakening."}
+]},
+q31:{sec:"3.1",qs:[
+ {t:"mcq",q:"The speed of a D.C. motor is approximately proportional to:",o:["(V − IaRa)/Φ","Φ/(V − IaRa)","Φ × Ia","V × Φ"],a:0,e:"N ∝ Eb/Φ = (V − IaRa)/Φ."},
+ {t:"tf",q:"With all other quantities constant, motor speed is inversely proportional to flux.",a:true,e:"N ∝ 1/Φ for a fixed Eb."},
+ {t:"mcq",q:"Which of these is NOT a speed-control method for a D.C. shunt motor?",o:["Changing the number of poles while running","Field control","Armature resistance control","Armature voltage control"],a:0,e:"The number of poles is fixed by construction. The other three change Φ, R or V in the speed relation."},
+ {t:"mcq",q:"Speed control is needed in a lathe mainly because:",o:["Different jobs and cuts need different spindle speeds","It saves the cost of the motor","It removes the need for a starter","It increases back EMF permanently"],a:0,e:"Cutting speed must suit the job diameter and material."}
+]},
+q32:{sec:"3.2",qs:[
+ {t:"mcq",q:"In field control, the variable resistance is connected:",o:["In series with the shunt field winding","In series with the armature","Across the brushes","In parallel with the supply"],a:0,e:"The shunt field regulator is in series with the field winding, so it changes field current and flux."},
+ {t:"mcq",q:"Increasing the field regulator resistance makes the motor speed:",o:["Increase","Decrease","Stay the same","Become zero"],a:0,e:"More resistance means less field current, less flux, and since N ∝ 1/Φ, higher speed."},
+ {t:"tf",q:"Field control can reduce the speed below the normal (rated) speed.",a:false,e:"With the regulator at zero the field is already at full strength; adding resistance can only weaken it, giving speeds above normal."},
+ {t:"mcq",q:"If the shunt field circuit of a lightly loaded running motor opens, the motor:",o:["May race to a dangerously high speed","Stops at once","Runs at exactly the same speed","Reverses direction"],a:0,e:"Flux falls to a small residual value; N ∝ 1/Φ, so speed rises dangerously."},
+ {t:"num",q:"A motor runs at 1000 rpm. The flux is reduced to 90% while the back EMF stays almost the same. Find the new speed (nearest rpm).",a:1111,u:"rpm",tol:0.005,e:"N2 = N1 × Φ1/Φ2 = 1000/0.9 ≈ 1111 rpm."}
+]},
+q33:{sec:"3.3",qs:[
+ {t:"mcq",q:"The main disadvantage of armature resistance control is:",o:["Large power loss in the series resistance","Speeds above normal cannot be reached","It needs a costly converter","It weakens the field"],a:0,e:"The full armature current flows through Rext, wasting Ia²Rext as heat. (It is true that it cannot exceed normal speed, but the power loss is the main drawback.)"},
+ {t:"num",q:"A 220 V shunt motor (Ra = 0.5 Ω) runs at 1000 rpm with Ia = 20 A. A 2 Ω resistance is added in series with the armature; Ia stays 20 A. Find the new speed (nearest rpm).",a:810,u:"rpm",tol:0.006,e:"Eb1 = 220 − 10 = 210 V. Eb2 = 220 − 20 × 2.5 = 170 V. N2 = 1000 × 170/210 ≈ 810 rpm."},
+ {t:"tf",q:"In armature resistance control, the shunt field current also changes.",a:false,e:"The field is connected directly across the supply, so field current and flux stay constant."},
+ {t:"mcq",q:"Speed regulation is poor with armature resistance control because:",o:["The voltage drop IaRext changes with load","The field is weak","The commutator sparks","The supply voltage changes"],a:0,e:"A heavier load means more Ia, more drop in Rext, less Eb and so a large fall in speed."}
+]},
+q34:{sec:"3.4",qs:[
+ {t:"mcq",q:"In armature voltage control, the field is:",o:["Fed from a separate constant supply so flux stays constant","Short-circuited","Connected in series with the armature","Fed through a variable resistance that tracks the voltage"],a:0,e:"Keeping Φ constant makes speed nearly proportional to armature voltage."},
+ {t:"mcq",q:"A modern way to obtain variable D.C. voltage from the A.C. mains is a:",o:["Controlled (thyristor) rectifier","Step-up transformer alone","Field rheostat","Commutator"],a:0,e:"A phase-controlled rectifier gives an adjustable D.C. output voltage. A chopper does the same from a battery."},
+ {t:"num",q:"A motor (Ra = 0.5 Ω) runs at 1000 rpm on 220 V with Ia = 20 A. The armature voltage is reduced to 165 V; flux and Ia unchanged. Find the new speed (nearest rpm).",a:738,u:"rpm",tol:0.006,e:"Eb1 = 210 V. Eb2 = 165 − 10 = 155 V. N2 = 1000 × 155/210 ≈ 738 rpm."},
+ {t:"tf",q:"Armature voltage control can vary speed smoothly from near zero up to rated speed.",a:true,e:"With constant flux, speed follows the armature voltage over the whole range below rated speed."}
+]},
+q35s:{sec:"3.5",qs:[
+ {t:"mcq",q:"A workshop lathe normally runs at 1000 rpm. For finishing cuts on small jobs it must run at about 1500 rpm. The budget is small.",o:["Field control","Armature resistance control","Armature voltage control"],a:0,h:"Is the needed speed above or below normal?",e:"Speed above normal is only possible with field weakening, and a small field regulator is cheap and efficient."},
+ {t:"mcq",q:"A small hoist must occasionally run slowly for a few seconds while positioning a load. The simplest, cheapest arrangement is wanted; efficiency hardly matters.",o:["Field control","Armature resistance control","Armature voltage control"],a:1,h:"Below normal speed, short duty, lowest cost.",e:"For short-time low-speed duty, a series rheostat is simple and cheap; its losses matter little because it is used only briefly."},
+ {t:"mcq",q:"A paper-mill roller must run smoothly anywhere from 50 rpm to 1000 rpm for many hours with high efficiency and steady speed.",o:["Field control","Armature resistance control","Armature voltage control"],a:2,h:"Wide range below normal, efficient, long periods.",e:"Only armature voltage control gives a wide, smooth range below normal speed with good efficiency and good speed regulation."},
+ {t:"mcq",q:"A battery forklift must control speed from zero to full without wasting battery energy.",o:["Field control","Armature resistance control","Armature voltage control"],a:2,h:"Think about wasted energy in a resistor.",e:"A D.C. chopper varies the average armature voltage efficiently; a resistor would waste precious battery energy."},
+ {t:"mcq",q:"A ventilation blower needs a small, permanent increase of about 10% above its rated speed in summer.",o:["Field control","Armature resistance control","Armature voltage control"],a:0,h:"Above normal again.",e:"Slight field weakening raises speed above normal at very low cost and loss."}
+]},
+q36:{sec:"3.6",qs:[
+ {t:"num",q:"A 250 V shunt motor (Ra = 0.5 Ω) runs at 900 rpm with Ia = 30 A. The field is weakened to 85% flux and Ia becomes 35 A. Find the new speed.",a:1048,u:"rpm",tol:0.006,e:"Eb1 = 250 − 15 = 235 V. Eb2 = 250 − 17.5 = 232.5 V. N2 = 900 × (232.5/235) × (1/0.85) ≈ 1048 rpm."},
+ {t:"num",q:"The same motor (900 rpm, Ia = 30 A) has 3 Ω added in series with the armature; flux and Ia unchanged. Find the new speed.",a:555,u:"rpm",tol:0.006,e:"Eb2 = 250 − 30 × 3.5 = 145 V. N2 = 900 × 145/235 ≈ 555 rpm."},
+ {t:"num",q:"Instead, the armature voltage of the same motor is reduced to 150 V; flux and Ia unchanged. Find the new speed.",a:517,u:"rpm",tol:0.006,e:"Eb2 = 150 − 15 = 135 V. N2 = 900 × 135/235 ≈ 517 rpm."},
+ {t:"mcq",q:"Questions 2 and 3 give similar low speeds. Which method does it more efficiently?",o:["Armature voltage control","Armature resistance control","Both are equally efficient","Neither works below normal speed"],a:0,e:"In Q2, 30² × 3 = 2700 W is wasted in the resistor. In Q3 no resistor is used; only the small Ia²Ra loss remains."},
+ {t:"tf",q:"For a given load torque on a shunt motor, weakening the field increases the armature current.",a:true,e:"T ∝ ΦIa. To supply the same torque with less flux, Ia must rise."}
+]}
+};
+const FINAL=[
+ {m:1,t:"mcq",q:"The main function of the pole shoe is to:",o:["Spread the flux over the air gap and support the field coil","Carry current to the commutator","Reduce friction at the shaft","Insulate commutator segments"],a:0,e:"The pole shoe spreads flux evenly and holds the field coil in place."},
+ {m:1,t:"mcq",q:"In Fleming’s Left-Hand Rule, the thumb indicates the direction of:",o:["Force (motion) on the conductor","Magnetic field","Current","Induced EMF"],a:0,e:"thuMb = Motion."},
+ {m:1,t:"tf",q:"The commutator keeps the torque on the armature acting in one direction.",a:true,e:"It reverses each coil’s current as the coil passes the neutral axis, giving unidirectional torque."},
+ {m:1,t:"mcq",q:"Which motor is traditionally used for electric traction (trains, trams)?",o:["D.C. series motor","D.C. shunt motor","Differential compound motor","Separately excited motor with a weak field"],a:0,e:"Traction needs very high starting torque, which the series motor provides."},
+ {m:1,t:"mcq",q:"A real armature has many coils in slots all round the core so that:",o:["Torque is smoother and more continuous","The motor needs no field","Brushes are not needed","Back EMF becomes zero"],a:0,e:"At every instant many conductors are under the poles, so torque pulsations are small."},
+ {m:1,t:"mcq",q:"The D.C. shunt motor is best described as a:",o:["Nearly constant-speed motor","Variable-speed, high starting torque motor","Motor that must always be loaded","Motor with no field winding"],a:0,e:"Its flux is nearly constant, so speed drops only slightly with load."},
+ {m:2,t:"num",q:"A 240 V motor has Ra = 0.6 Ω and takes Ia = 15 A. Find the back EMF.",a:231,u:"V",tol:0.005,e:"Eb = 240 − 15 × 0.6 = 240 − 9 = 231 V."},
+ {m:2,t:"num",q:"A 4-pole, lap-wound motor has Z = 360 and Φ = 0.025 Wb. Find Eb at 1200 rpm.",a:180,u:"V",tol:0.005,e:"A = P = 4. Eb = (4 × 0.025 × 360 × 1200)/(60 × 4) = 43 200/240 = 180 V."},
+ {m:2,t:"mcq",q:"At the instant of starting, the armature current is limited only by:",o:["The armature resistance (and any starter resistance)","The back EMF","The load torque","The flux"],a:0,e:"Eb = 0 at standstill, so Ia = V/(Ra + Rstarter)."},
+ {m:2,t:"num",q:"A 2-pole, wave-wound motor (A = 2) has Z = 314, Φ = 0.04 Wb and Ia = 25 A. Find the electromagnetic torque (nearest N·m).",a:50,u:"N·m",tol:0.02,e:"PZ/2πA = 628/12.566 ≈ 49.97. T = 49.97 × 0.04 × 25 ≈ 50 N·m."},
+ {m:2,t:"tf",q:"Back EMF allows a motor to adjust its armature current automatically to the load.",a:true,e:"More load → lower speed → lower Eb → more Ia → more torque."},
+ {m:2,t:"mcq",q:"In a series motor (below saturation), the armature current is halved. The torque becomes:",o:["One quarter","Half","Double","Unchanged"],a:0,e:"T ∝ Ia², so (1/2)² = 1/4."},
+ {m:3,t:"mcq",q:"Which method is used to run a D.C. shunt motor above its rated speed?",o:["Field (flux) control","Armature resistance control","Armature voltage control","Reversing the supply"],a:0,e:"Weakening the field raises speed above normal."},
+ {m:3,t:"mcq",q:"Which speed-control method has the lowest efficiency?",o:["Armature resistance control","Field control","Armature voltage control","All are equal"],a:0,e:"Ia²Rext loss in the series resistance wastes much of the input."},
+ {m:3,t:"num",q:"A motor runs at 1200 rpm. Its flux is reduced to 80% while back EMF stays almost constant. Find the new speed.",a:1500,u:"rpm",tol:0.005,e:"N2 = 1200 × (1/0.8) = 1500 rpm."},
+ {m:3,t:"mcq",q:"A rolling mill needs a wide, smooth speed range below base speed with high efficiency. Choose the method.",o:["Armature voltage control","Armature resistance control","Field control","No control is possible"],a:0,e:"Armature voltage control from a controlled rectifier gives smooth, efficient control from near zero to rated speed."},
+ {m:3,t:"tf",q:"In armature voltage control, the field flux is kept constant.",a:true,e:"The field is fed from a separate constant supply so that speed follows armature voltage."},
+ {m:3,t:"mcq",q:"The shunt field of a lightly loaded running motor opens accidentally. What happens?",o:["Speed rises to a dangerous value","The motor stops smoothly","Speed stays the same","The motor reverses"],a:0,e:"Flux collapses to a residual value and N ∝ 1/Φ, so the motor races. Field-failure protection prevents this."}
+];
+/* ================= motor drawings ================= */
+const PARTS={
+ yoke:{name:"Yoke (frame)",fn:"Outer frame of the motor. It protects the inner parts, supports the poles, and provides the return path for magnetic flux between poles.",mat:"Cast iron in small machines; cast steel or rolled steel in large machines.",sig:"Being part of the magnetic circuit, it must carry flux with little opposition (low reluctance) while being mechanically strong."},
+ pole:{name:"Pole core and pole shoe",fn:"The pole core carries the field winding and becomes an electromagnet. The wider, curved pole shoe spreads the flux evenly over the air gap and holds the field coil in place.",mat:"Thin laminations of steel, riveted together and bolted to the yoke.",sig:"Lamination reduces eddy current loss in the pole face. A good shoe shape gives a uniform air-gap flux."},
+ field:{name:"Field winding",fn:"Coils wound on the pole cores. Current through them magnetises the poles, producing alternate N and S poles and the main magnetic field.",mat:"Insulated copper wire: many turns of thin wire (shunt) or few turns of thick wire (series).",sig:"Its connection (shunt, series, compound, separate) decides the type and behaviour of the motor."},
+ armcore:{name:"Armature core",fn:"Cylindrical rotating core mounted on the shaft. Slots on its surface hold the armature conductors, and it provides a low-reluctance path for flux.",mat:"Thin silicon-steel laminations (about 0.35 to 0.5 mm) insulated from each other.",sig:"Lamination reduces eddy current loss; silicon steel reduces hysteresis loss. Both improve efficiency."},
+ armwind:{name:"Armature winding",fn:"Insulated conductors placed in the armature slots and connected to the commutator. They carry the armature current that experiences force in the magnetic field.",mat:"Insulated copper conductors; lap or wave winding.",sig:"This is where electrical energy is converted to mechanical energy, and where back EMF is induced."},
+ comm:{name:"Commutator",fn:"A cylinder of segments connected to the armature coils. With the brushes, it reverses the current in each coil as the coil passes the neutral zone, so torque stays in one direction.",mat:"Wedge-shaped hard-drawn copper segments, insulated from each other by thin mica sheets.",sig:"Without it a D.C. motor cannot produce continuous rotation in one direction."},
+ brush:{name:"Brushes",fn:"Stationary blocks pressed against the rotating commutator by springs. They carry current from the external supply into the armature.",mat:"Carbon or graphite, held in brush holders.",sig:"Carbon is soft and self-lubricating, so it reduces wear of the commutator. Brushes wear out and need periodic replacement."},
+ shaft:{name:"Shaft",fn:"Carries the armature core and commutator and transmits the mechanical output (torque) to the load.",mat:"Mild steel or alloy steel.",sig:"Must be strong enough to transmit full torque without bending or twisting."},
+ bearing:{name:"Bearings",fn:"Support the shaft in the end covers and let it rotate smoothly with very little friction.",mat:"Ball or roller bearings (hardened steel); sleeve bearings in some machines.",sig:"Good bearings reduce friction loss and noise and keep the air gap uniform."}
+};
+const PART_ORDER=["yoke","pole","field","armcore","armwind","comm","brush","shaft","bearing"];
+function arcPath(cx,cy,r1,r2,a1,a2){const p=(r,a)=>[cx+r*Math.cos(a),cy+r*Math.sin(a)];const [x1,y1]=p(r2,a1),[x2,y2]=p(r2,a2),[x3,y3]=p(r1,a2),[x4,y4]=p(r1,a1);const lg=(a2-a1)>Math.PI?1:0;return `M${x1} ${y1}A${r2} ${r2} 0 ${lg} 1 ${x2} ${y2}L${x3} ${y3}A${r1} ${r1} 0 ${lg} 0 ${x4} ${y4}Z`;}
+function drawEnd(svg,{interactive=false,slots=16,fieldLines=false}={}){
+  svg.innerHTML="";const cx=200,cy=200;
+  const g=n=>{const e=svgEl("g",{},svg);if(n){e.classList.add("part");e.dataset.part=n;if(interactive){e.setAttribute("tabindex","0");e.setAttribute("role","button");e.setAttribute("aria-label",PARTS[n].name);}}return e;};
+  const yoke=g("yoke");svgEl("path",{d:`M${cx-186} ${cy}a186 186 0 1 0 372 0a186 186 0 1 0 -372 0ZM${cx-160} ${cy}a160 160 0 1 1 320 0a160 160 0 1 1 -320 0Z`,"fill-rule":"evenodd",fill:"var(--steel)",stroke:"var(--ink)","stroke-width":1.2},yoke);
+  const pole=g("pole");
+  [[-1,"var(--north)","N"],[1,"var(--south)","S"]].forEach(([s,c,l])=>{
+    const x0=s<0?40:304; svgEl("rect",{x:x0-1,y:172,width:57,height:56,fill:c,stroke:"var(--ink)","stroke-width":1},pole);
+    const a=s<0?Math.PI:0, w=0.66; svgEl("path",{d:arcPath(cx,cy,93,111,a-w,a+w),fill:c,stroke:"var(--ink)","stroke-width":1},pole);
+    txt(pole,s<0?68:332,206,l,{"text-anchor":"middle","font-weight":700,fill:"#fff","font-size":18});
+  });
+  const field=g("field");
+  [[50,151],[50,229],[310,151],[310,229]].forEach(([x,y])=>{svgEl("rect",{x,y,width:40,height:20,rx:3,fill:"var(--copper)",stroke:"var(--ink)","stroke-width":1},field);for(let i=1;i<4;i++)svgEl("line",{x1:x+i*10,y1:y+2,x2:x+i*10,y2:y+18,stroke:"rgba(0,0,0,.35)"},field);});
+  const rotor=svgEl("g",{class:"rotor"},svg);
+  const ac=svgEl("g",{},rotor);ac.classList.add("part");ac.dataset.part="armcore";if(interactive){ac.setAttribute("tabindex","0");ac.setAttribute("role","button");ac.setAttribute("aria-label",PARTS.armcore.name);}
+  svgEl("circle",{cx,cy,r:89,fill:"var(--steel-2)",stroke:"var(--ink)","stroke-width":1.2},ac);
+  svgEl("circle",{cx,cy,r:58,fill:"none",stroke:"var(--steel)","stroke-dasharray":"3 4"},ac);
+  const aw=svgEl("g",{},rotor);aw.classList.add("part");aw.dataset.part="armwind";if(interactive){aw.setAttribute("tabindex","0");aw.setAttribute("role","button");aw.setAttribute("aria-label",PARTS.armwind.name);}
+  const conds=[];
+  for(let i=0;i<slots;i++){const a=i/slots*2*Math.PI;const x=cx+75*Math.cos(a),y=cy+75*Math.sin(a);
+    const sg=svgEl("g",{transform:`translate(${x} ${y})`},aw);
+    svgEl("rect",{x:-9,y:-9,width:18,height:18,rx:3,fill:"var(--surface-2)",stroke:"var(--ink)","stroke-width":.8,transform:`rotate(${a*180/Math.PI})`},sg);
+    svgEl("circle",{r:7,fill:"var(--copper)",stroke:"var(--ink)","stroke-width":.8},sg);
+    const sym=svgEl("g",{},sg);conds.push({a,sym});}
+  const sh=g("shaft");svgEl("circle",{cx,cy,r:17,fill:"var(--steel-3)",stroke:"var(--ink)","stroke-width":1.2},sh);svgEl("rect",{x:cx-4,y:cy-17,width:8,height:6,fill:"var(--ink)"},sh);
+  sh.remove();rotor.appendChild(sh);
+  return {rotor,conds,cx,cy};
+}
+function setSym(gs,dir){gs.innerHTML="";if(dir>0){svgEl("line",{x1:-4,y1:-4,x2:4,y2:4,stroke:"#fff","stroke-width":1.8},gs);svgEl("line",{x1:-4,y1:4,x2:4,y2:-4,stroke:"#fff","stroke-width":1.8},gs);}else{svgEl("circle",{r:2.2,fill:"#fff"},gs);}}
+/* hero */
+(function hero(){
+  const svg=$("#heroMotor");const m=drawEnd(svg,{slots:16});
+  const fl=svgEl("g",{opacity:.55},svg);svg.insertBefore(fl,m.rotor);
+  [-40,0,40].forEach(dy=>svgEl("path",{d:`M112 ${200+dy}C150 ${200+dy*1.2} 250 ${200+dy*1.2} 288 ${200+dy}`,fill:"none",stroke:"var(--south)","stroke-width":1.3,"stroke-dasharray":"5 5"},fl));
+  let ang=0,last=null;
+  function step(t){if(last==null)last=t;const dt=Math.min(.05,(t-last)/1000);last=t;ang-=dt*0.9;
+    m.rotor.setAttribute("transform",`rotate(${ang*180/Math.PI} 200 200)`);
+    m.conds.forEach(c=>{const a=c.a+ang;const x=Math.cos(a);setSym(c.sym,x<0?1:-1);c.sym.setAttribute("transform",`rotate(${-ang*180/Math.PI})`);});}
+  m.conds.forEach(c=>setSym(c.sym,Math.cos(c.a)<0?1:-1));
+  let running=false;
+  viewHooks.home=()=>{if(!reduceMotion&&!running){running=true;last=null;requestAnimationFrame(function f(t){if(currentView!=="home"){running=false;return;}step(t);requestAnimationFrame(f);});}};
+})();
+function drawSide(svg,interactive){
+  svg.innerHTML="";
+  const g=n=>{const e=svgEl("g",{},svg);e.classList.add("part");e.dataset.part=n;if(interactive){e.setAttribute("tabindex","0");e.setAttribute("role","button");e.setAttribute("aria-label",PARTS[n].name);}return e;};
+  const y=g("yoke");svgEl("rect",{x:90,y:20,width:260,height:18,fill:"var(--steel)",stroke:"var(--ink)"},y);svgEl("rect",{x:90,y:262,width:260,height:18,fill:"var(--steel)",stroke:"var(--ink)"},y);
+  [[82,20,8,108],[82,172,8,108],[350,20,8,108],[350,172,8,108]].forEach(r=>svgEl("rect",{x:r[0],y:r[1],width:r[2],height:r[3],fill:"var(--steel)",stroke:"var(--ink)"},y));
+  const p=g("pole");svgEl("rect",{x:172,y:38,width:76,height:34,fill:"var(--north)",stroke:"var(--ink)"},p);svgEl("rect",{x:152,y:72,width:116,height:9,fill:"var(--north)",stroke:"var(--ink)"},p);
+  svgEl("rect",{x:172,y:228,width:76,height:34,fill:"var(--south)",stroke:"var(--ink)"},p);svgEl("rect",{x:152,y:219,width:116,height:9,fill:"var(--south)",stroke:"var(--ink)"},p);
+  const f=g("field");[[152,40],[250,40],[152,230],[250,230]].forEach(([x,yy])=>svgEl("rect",{x,y:yy,width:18,height:30,rx:2,fill:"var(--copper)",stroke:"var(--ink)"},f));
+  const s=g("shaft");svgEl("rect",{x:12,y:141,width:396,height:18,rx:3,fill:"var(--steel-3)",stroke:"var(--ink)"},s);
+  const ac=g("armcore");svgEl("rect",{x:135,y:85,width:130,height:130,fill:"var(--steel-2)",stroke:"var(--ink)"},ac);for(let x=142;x<265;x+=8)svgEl("line",{x1:x,y1:86,x2:x,y2:214,stroke:"var(--steel)","stroke-width":1},ac);
+  const aw=g("armwind");[[119,95],[265,95]].forEach(([x,yy])=>svgEl("rect",{x,y:yy,width:16,height:110,rx:6,fill:"var(--copper)",stroke:"var(--ink)"},aw));svgEl("rect",{x:135,y:87,width:130,height:6,fill:"var(--copper)",opacity:.85},aw);svgEl("rect",{x:135,y:207,width:130,height:6,fill:"var(--copper)",opacity:.85},aw);
+  svgEl("path",{d:"M281 110H292M281 190H292",stroke:"var(--copper)","stroke-width":3},aw);
+  const c=g("comm");svgEl("rect",{x:292,y:118,width:40,height:64,fill:"var(--copper)",stroke:"var(--ink)"},c);for(let yy=126;yy<182;yy+=8)svgEl("line",{x1:292,y1:yy,x2:332,y2:yy,stroke:"var(--ink)","stroke-width":1},c);
+  const b=g("brush");[[302,94],[302,182]].forEach(([x,yy])=>{svgEl("rect",{x,y:yy,width:20,height:24,fill:"#2f3436",stroke:"var(--ink)"},b);});svgEl("path",{d:"M312 94V80M312 206V220",stroke:"var(--ink)","stroke-width":2},b);txt(b,326,86,"+",{"font-weight":700});txt(b,326,222,"−",{"font-weight":700});
+  const be=g("bearing");[[74,128],[344,128]].forEach(([x,yy])=>{svgEl("rect",{x,y:yy,width:24,height:44,rx:3,fill:"var(--surface)",stroke:"var(--ink)"},be);[136,164].forEach(cy=>svgEl("circle",{cx:x+12,cy,r:5,fill:"var(--steel)",stroke:"var(--ink)"},be));});
+  txt(svg,210,300-6,"load end ←  shaft  → commutator end",{"text-anchor":"middle","font-size":11,fill:"var(--muted)"});
+}
+(function construction(){
+  drawEnd($("#endView"),{interactive:true});drawSide($("#sideView"),true);
+  const btns=$("#partBtns");PART_ORDER.forEach(k=>{const b=document.createElement("button");b.textContent=PARTS[k].name.replace(" (frame)","");b.dataset.part=k;b.setAttribute("aria-pressed","false");btns.appendChild(b);});
+  $("#partTable").innerHTML=PART_ORDER.map(k=>`<tr><th>${PARTS[k].name}</th><td>${PARTS[k].fn.split(". ")[0]}.</td><td>${PARTS[k].mat}</td></tr>`).join("");
+  function select(k){
+    $$("#endView .part,#sideView .part").forEach(p=>{p.classList.toggle("sel",p.dataset.part===k);p.classList.toggle("dim",p.dataset.part!==k);});
+    $$("#partBtns button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.part===k?"true":"false"));
+    const P=PARTS[k];$("#partInfo").innerHTML=`<h4>${P.name}</h4><dl><dt>Function</dt><dd>${P.fn}</dd><dt>Material</dt><dd>${P.mat}</dd><dt>Why it matters</dt><dd>${P.sig}</dd></dl><button class="btn sm" id="partClear" style="margin-top:10px">Show all parts</button>`;
+    $("#partClear").addEventListener("click",()=>{$$("#endView .part,#sideView .part").forEach(p=>p.classList.remove("sel","dim"));$$("#partBtns button").forEach(b=>b.setAttribute("aria-pressed","false"));$("#partInfo").innerHTML="<h4>Choose a part</h4><p>Pick any coloured region or a button above.</p>";});
+  }
+  const handler=e=>{const p=e.target.closest(".part,[data-part]");if(p)select(p.dataset.part);};
+  ["#endView","#sideView","#partBtns"].forEach(s=>$(s).addEventListener("click",handler));
+  ["#endView","#sideView"].forEach(s=>$(s).addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.dataset.part){e.preventDefault();select(e.target.dataset.part);}}));
+})();
+/* drag and drop */
+(function dragdrop(){
+  const svg=$("#ddView");svg.innerHTML="";
+  const gE=svgEl("g",{transform:"translate(10 10) scale(.75)"},svg);const tmpE=svgEl("svg",{},null);drawEnd(tmpE,{});[...tmpE.childNodes].forEach(n=>gE.appendChild(n));
+  const gS=svgEl("g",{transform:"translate(330 10)"},svg);const tmpS=svgEl("svg",{},null);drawSide(tmpS,false);[...tmpS.childNodes].forEach(n=>gS.appendChild(n));
+  const marks=[["yoke",160,30],["pole",61,160],["field",63,129],["armcore",160,194],["armwind",201,120],["shaft",160,160],["comm",642,147],["brush",642,116],["bearing",416,160]];
+  marks.forEach((m,i)=>{svgEl("circle",{cx:m[1],cy:m[2],r:12,fill:"var(--ink)",stroke:"var(--surface)","stroke-width":2},svg);txt(svg,m[1],m[2]+5,String(i+1),{"text-anchor":"middle",fill:"var(--surface)","font-weight":700,"font-size":13});});
+  const slotsBox=$("#ddSlots"),bank=$("#ddBank");let picked=null;
+  function chip(k){const c=document.createElement("span");c.className="chip";c.textContent=PARTS[k].name.replace(" (frame)","");c.dataset.part=k;c.draggable=true;c.tabIndex=0;c.setAttribute("role","button");
+    c.addEventListener("dragstart",e=>{e.dataTransfer.setData("text/plain",k);picked=c;});
+    c.addEventListener("click",e=>{e.stopPropagation();if(picked===c){c.classList.remove("picked");picked=null;return;}$$(".chip.picked").forEach(x=>x.classList.remove("picked"));picked=c;c.classList.add("picked");});
+    c.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();c.click();}});return c;}
+  function place(slot){if(!picked)return;const prev=$(".chip",slot);if(prev)bank.appendChild(prev);slot.appendChild(picked);picked.classList.remove("picked");picked=null;$$(".slot").forEach(s=>s.classList.remove("right","wrong"));$("#ddResult").innerHTML="";}
+  function reset(){slotsBox.innerHTML="";bank.innerHTML="";picked=null;$("#ddResult").innerHTML="";
+    marks.forEach((m,i)=>{const s=document.createElement("div");s.className="slot";s.dataset.ans=m[0];s.tabIndex=0;s.setAttribute("aria-label","Slot "+(i+1));s.innerHTML=`<span class="sn2">${i+1}</span>`;
+      s.addEventListener("dragover",e=>{e.preventDefault();s.classList.add("over");});s.addEventListener("dragleave",()=>s.classList.remove("over"));
+      s.addEventListener("drop",e=>{e.preventDefault();s.classList.remove("over");place(s);});
+      s.addEventListener("click",()=>place(s));s.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();place(s);}});slotsBox.appendChild(s);});
+    const ks=marks.map(m=>m[0]).sort(()=>Math.random()-.5);ks.forEach(k=>bank.appendChild(chip(k)));}
+  bank.addEventListener("dragover",e=>e.preventDefault());bank.addEventListener("drop",e=>{e.preventDefault();if(picked){bank.appendChild(picked);picked=null;}});
+  bank.addEventListener("click",()=>{if(picked&&picked.parentElement!==bank){bank.appendChild(picked);picked.classList.remove("picked");picked=null;}});
+  $("#ddCheck").addEventListener("click",()=>{let ok=0;$$(".slot").forEach(s=>{const c=$(".chip",s);s.classList.remove("right","wrong");if(!c)return;if(c.dataset.part===s.dataset.ans){ok++;s.classList.add("right");}else s.classList.add("wrong");});
+    const msg=ok===marks.length?`<div class="status ok">All ${ok} correct. Well done.</div>`:`<div class="status warn">${ok} of ${marks.length} correct. Red slots are wrong or empty; move those names and check again. Hint: the commutator, brushes and bearings appear only in the side view.</div>`;$("#ddResult").innerHTML=msg;});
+  $("#ddReset").addEventListener("click",reset);reset();
+})();
+/* Fleming */
+(function fleming(){
+  const svg=$("#flemSvg");let fs=1,cs=1,pred=null,shown=false;
+  const gF=seg("flemField",v=>{fs=+v;shown=false;draw();}),gC=seg("flemCur",v=>{cs=+v;shown=false;draw();});seg("flemPred",v=>{pred=v;});
+  function arrowHead(id,c){return `<marker id="${id}" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" refX="2" refY="7" orient="auto"><path d="M0 0L14 7L0 14z" fill="${c}"/></marker>`;}
+  function draw(){
+    svg.innerHTML=`<defs>${arrowHead("fa","var(--south)")}${arrowHead("ff","var(--enamel)")}</defs>`;
+    const L=fs>0?["N","var(--north)"]:["S","var(--south)"],R=fs>0?["S","var(--south)"]:["N","var(--north)"];
+    svgEl("rect",{x:10,y:50,width:62,height:160,rx:4,fill:L[1]},svg);txt(svg,41,138,L[0],{"text-anchor":"middle",fill:"#fff","font-size":26,"font-weight":700});
+    svgEl("rect",{x:268,y:50,width:62,height:160,rx:4,fill:R[1]},svg);txt(svg,299,138,R[0],{"text-anchor":"middle",fill:"#fff","font-size":26,"font-weight":700});
+    [70,100,160,190].forEach(yy=>{const x1=fs>0?80:260,x2=fs>0?258:82;svgEl("line",{x1,y1:yy,x2,y2:yy,stroke:"var(--south)","stroke-width":1.4,"stroke-dasharray":"6 4","marker-end":"url(#fa)"},svg);});
+    svgEl("circle",{cx:170,cy:130,r:26,fill:"var(--copper)",stroke:"var(--ink)","stroke-width":1.5},svg);
+    if(cs>0){svgEl("line",{x1:155,y1:115,x2:185,y2:145,stroke:"#fff","stroke-width":3},svg);svgEl("line",{x1:155,y1:145,x2:185,y2:115,stroke:"#fff","stroke-width":3},svg);}else svgEl("circle",{cx:170,cy:130,r:6,fill:"#fff"},svg);
+    txt(svg,170,246,"Field: "+(fs>0?"left → right":"right → left")+"   Current: "+(cs>0?"into page":"out of page"),{"text-anchor":"middle","font-size":12,fill:"var(--muted)"});
+    if(shown){const down=fs*cs>0;svgEl("line",{x1:170,y1:down?160:100,x2:170,y2:down?214:46,stroke:"var(--enamel)","stroke-width":5,"marker-end":"url(#ff)"},svg);txt(svg,184,down?204:58,"F",{"font-weight":700,"font-size":18,fill:"var(--enamel)"});}
+  }
+  $("#flemShow").addEventListener("click",()=>{shown=true;draw();const down=fs*cs>0;const ans=down?"down":"up";
+    const why=`Field ${fs>0?"left to right":"right to left"}, current ${cs>0?"into":"out of"} the page: the field is strengthened ${down?"above":"below"} the conductor and weakened ${down?"below":"above"} it, so the conductor is pushed <b>${ans}wards</b>.`;
+    $("#flemOut").innerHTML=pred?`<div class="status ${pred===ans?"ok":"bad"}">${pred===ans?"Your prediction was correct.":"Your prediction was wrong. Check with your left hand again."}</div><p>${why}</p>`:`<p>${why}</p>`;});
+  draw();
+})();
+/* single coil animation */
+(function coil(){
+  const svg=$("#coilSvg");const cx=180,cy=170,R=95;let th=150*Math.PI/180,om=0,mode="comm",pol=1,playing=false,last=null,iAprev=1;
+  seg("coilMode",v=>{mode=v;});seg("coilPol",v=>{pol=+v;});
+  const st={};
+  (function build(){svg.innerHTML=`<defs><marker id="ca" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" refX="2" refY="7" orient="auto"><path d="M0 0L14 7L0 14z" fill="var(--enamel)"/></marker></defs>`;
+    svgEl("path",{d:`M8 80H50Q70 170 50 260H8Z`,fill:"var(--north)"},svg);txt(svg,24,176,"N",{fill:"#fff","font-weight":700,"font-size":22});
+    svgEl("path",{d:`M352 80H310Q290 170 310 260H352Z`,fill:"var(--south)"},svg);txt(svg,326,176,"S",{fill:"#fff","font-weight":700,"font-size":22});
+    [120,170,220].forEach(yy=>svgEl("line",{x1:70,y1:yy,x2:290,y2:yy,stroke:"var(--south)","stroke-dasharray":"5 6",opacity:.45},svg));
+    svgEl("line",{x1:cx,y1:40,x2:cx,y2:300,stroke:"var(--muted)","stroke-dasharray":"2 5"},svg);txt(svg,cx,30,"neutral zone",{"text-anchor":"middle","font-size":11,fill:"var(--muted)"});
+    st.loop=svgEl("line",{stroke:"var(--copper)","stroke-width":3,"stroke-dasharray":"7 4"},svg);
+    st.h1=svgEl("path",{fill:"none",stroke:"var(--copper)","stroke-width":9},svg);st.h2=svgEl("path",{fill:"none",stroke:"#d9a066","stroke-width":9},svg);
+    svgEl("rect",{x:cx-7,y:cy-46,width:14,height:16,fill:"#2f3436"},svg);svgEl("rect",{x:cx-7,y:cy+30,width:14,height:16,fill:"#2f3436"},svg);
+    txt(svg,cx+12,cy-36,"+",{"font-weight":700});txt(svg,cx+12,cy+46,"−",{"font-weight":700});
+    st.A=svgEl("g",{},svg);svgEl("circle",{r:14,fill:"var(--copper)",stroke:"var(--ink)"},st.A);st.As=svgEl("g",{},st.A);st.Al=txt(st.A,0,-20,"A",{"text-anchor":"middle","font-weight":700,"font-size":13});
+    st.B=svgEl("g",{},svg);svgEl("circle",{r:14,fill:"var(--copper)",stroke:"var(--ink)"},st.B);st.Bs=svgEl("g",{},st.B);st.Bl=txt(st.B,0,-20,"B",{"text-anchor":"middle","font-weight":700,"font-size":13});
+    st.fA=svgEl("line",{stroke:"var(--enamel)","stroke-width":4,"marker-end":"url(#ca)"},svg);st.fB=svgEl("line",{stroke:"var(--enamel)","stroke-width":4,"marker-end":"url(#ca)"},svg);
+    st.dir=txt(svg,cx,330,"",{"text-anchor":"middle","font-size":13,fill:"var(--muted)"});
+  })();
+  function curA(){const c=Math.cos(th);if(mode==="comm"){if(Math.abs(c)>1e-6)iAprev=c<0?1:-1;return pol*iAprev;}return pol;}
+  function torque(){return -2*curA()*Math.cos(th);}
+  function arc(r,a1,a2){const p=a=>[cx+r*Math.cos(a),cy-r*Math.sin(a)];const[x1,y1]=p(a1),[x2,y2]=p(a2);return `M${x1} ${y1}A${r} ${r} 0 0 0 ${x2} ${y2}`;}
+  function render(){
+    const ax=cx+R*Math.cos(th),ay=cy-R*Math.sin(th),bx=cx-R*Math.cos(th),by=cy+R*Math.sin(th);
+    st.loop.setAttribute("x1",ax);st.loop.setAttribute("y1",ay);st.loop.setAttribute("x2",bx);st.loop.setAttribute("y2",by);
+    const g=0.18;const segA=mode==="comm"?0:th;
+    const base=mode==="comm"?th:th;st.h1.setAttribute("d",arc(22,base+g,base+Math.PI-g));st.h2.setAttribute("d",arc(22,base+Math.PI+g,base+2*Math.PI-g));
+    if(mode!=="comm"){st.h1.setAttribute("d",`M${cx-26} ${cy}a26 26 0 1 0 52 0a26 26 0 1 0 -52 0`);st.h2.setAttribute("d",`M${cx-15} ${cy}a15 15 0 1 0 30 0a15 15 0 1 0 -30 0`);}
+    st.A.setAttribute("transform",`translate(${ax} ${ay})`);st.B.setAttribute("transform",`translate(${bx} ${by})`);
+    const iA=curA();setSym(st.As,iA>0?1:-1);setSym(st.Bs,iA>0?-1:1);
+    const FA=-iA,FB=iA;const Lf=34;
+    st.fA.setAttribute("x1",ax);st.fA.setAttribute("y1",ay+(FA>0?-16:16));st.fA.setAttribute("x2",ax);st.fA.setAttribute("y2",ay+(FA>0?-16-Lf:16+Lf));
+    st.fB.setAttribute("x1",bx);st.fB.setAttribute("y1",by+(FB>0?-16:16));st.fB.setAttribute("x2",bx);st.fB.setAttribute("y2",by+(FB>0?-16-Lf:16+Lf));
+    const T=torque();$("#coilTq").textContent=(Math.abs(T)<0.05?"≈ 0":(T>0?"anticlockwise ":"clockwise ")+Math.abs(T).toFixed(2));
+    const bar=$("#coilTqBar");const w=Math.min(50,Math.abs(T)/2*50);bar.style.width=w+"%";bar.style.left=T>=0?"50%":(50-w)+"%";
+    const c=Math.cos(th);const under=c<0?"A":"B";
+    let ex;
+    if(Math.abs(c)<0.15)ex=mode==="comm"?`<b>Neutral zone.</b> The coil sides are midway between the poles, so the forces point through the shaft and torque is nearly zero. The coil coasts through on its momentum while the commutator segments swap brushes, <b>reversing the current in the coil</b>.`:`<b>Neutral zone, no commutator.</b> Torque is zero here. Once the coil passes this point the current is not reversed, so the torque acts backwards and pulls the coil back. It ends up swinging and stopping here.`;
+    else ex=`Side ${under} is under the N pole and carries current <b>into</b> the page (⊗); the other side carries current out (⊙). By Fleming’s rule one side is pushed down and the other up. These opposite forces form a couple, giving ${T>0?"anticlockwise":"clockwise"} torque${Math.abs(c)>0.9?", at its maximum because the sides are right under the poles":""}.`;
+    $("#coilExplain").innerHTML=ex;
+    st.dir.textContent=playing?(om>0.2?"rotating anticlockwise":om<-0.2?"rotating clockwise":"nearly at rest"):"paused";
+  }
+  function frame(t){if(!playing){last=null;return;}if(last==null)last=t;let dt=Math.min(.04,(t-last)/1000);last=t;
+    for(let k=0;k<4;k++){const h=dt/4;const a=6*torque()-1.4*om;om+=a*h;th+=om*h;}render();requestAnimationFrame(frame);}
+  $("#coilPlay").addEventListener("click",()=>{playing=!playing;$("#coilPlay").textContent=playing?"Pause":"Play";if(playing){if(Math.abs(om)<0.01&&Math.abs(torque())<0.05)th+=0.25*pol;requestAnimationFrame(frame);}else render();});
+  $("#coilStep").addEventListener("click",()=>{playing=false;$("#coilPlay").textContent="Play";om=0;th+=(Math.PI/4)*(mode==="comm"?Math.sign(torque()||pol):pol);render();});
+  $("#coilReset").addEventListener("click",()=>{playing=false;$("#coilPlay").textContent="Play";om=0;th=150*Math.PI/180;iAprev=1;render();});
+  render();
+})();
+$$("#ddView .part").forEach(p=>p.classList.remove("part"));
+/* ================= types of motors ================= */
+function coilPath(x1,y1,x2,y2,n=5,r=8){const vert=x1===x2;const len=vert?y2-y1:x2-x1;const step=len/n;let d=`M${x1} ${y1}`;for(let i=0;i<n;i++){d+=vert?` a${r} ${step/2} 0 0 1 0 ${step}`:` a${step/2} ${r} 0 0 0 ${step} 0`;}return d;}
+function circuitBits(svg){
+  const W=(pts)=>svgEl("polyline",{points:pts,fill:"none",stroke:"var(--ink)","stroke-width":2},svg);
+  const term=(x,y,l)=>{svgEl("circle",{cx:x,cy:y,r:5,fill:"var(--surface)",stroke:"var(--ink)","stroke-width":2},svg);txt(svg,x-18,y+5,l,{"font-weight":700,"font-size":16});};
+  const arm=(x,y,lab="A")=>{svgEl("circle",{cx:x,cy:y,r:24,fill:"var(--steel-3)",stroke:"var(--ink)","stroke-width":2},svg);svgEl("rect",{x:x-6,y:y-30,width:12,height:7,fill:"var(--ink)"},svg);svgEl("rect",{x:x-6,y:y+23,width:12,height:7,fill:"var(--ink)"},svg);txt(svg,x,y+5,lab,{"text-anchor":"middle","font-weight":700});};
+  const coil=(x1,y1,x2,y2,n)=>svgEl("path",{d:coilPath(x1,y1,x2,y2,n),fill:"none",stroke:"var(--copper)","stroke-width":3},svg);
+  const lab=(x,y,s,a={})=>txt(svg,x,y,s,Object.assign({"font-size":12.5,fill:"var(--muted)"},a));
+  const bat=(x,y)=>{svgEl("line",{x1:x-14,y1:y-4,x2:x+14,y2:y-4,stroke:"var(--ink)","stroke-width":2.5},svg);svgEl("line",{x1:x-8,y1:y+4,x2:x+8,y2:y+4,stroke:"var(--ink)","stroke-width":2.5},svg);};
+  const res=(x1,y,x2)=>{let d=`M${x1} ${y}`;const n=6,s=(x2-x1)/n;for(let i=0;i<n;i++)d+=` l${s/2} ${i%2?8:-8} l${s/2} ${i%2?-8:8}`;svgEl("path",{d,fill:"none",stroke:"var(--ink)","stroke-width":2},svg);};
+  return {W,term,arm,coil,lab,bat,res};
+}
+const TYPES={
+ sep:{title:"Separately excited D.C. motor",draw(svg,c){c.term(40,40,"+");c.term(40,200,"−");c.W("45,40 140,40 140,90");c.W("140,150 140,200 45,200");c.arm(140,120);c.lab(54,125,"V");c.lab(170,110,"Ia");
+   c.W("250,60 330,60 330,112");c.W("330,128 330,180 250,180");c.W("250,60 250,75");c.coil(250,75,250,165,5);c.W("250,165 250,180");c.bat(330,120);c.lab(258,215,"Field + separate source");},
+   conn:"Field winding is supplied from an independent D.C. source; it is not connected to the armature circuit.",ch:"Flux is constant and set independently, so speed is nearly constant and can be controlled over a wide range.",adv:"Very flexible and precise control of speed and torque.",lim:"Needs a separate D.C. supply for the field, adding cost.",app:"Ward-Leonard drives, rolling mills, paper machines, laboratory test benches."},
+ shunt:{title:"D.C. shunt motor",draw(svg,c){c.term(40,40,"+");c.term(40,200,"−");c.W("45,40 300,40");c.W("45,200 300,200");c.W("150,40 150,90");c.arm(150,120);c.W("150,150 150,200");c.W("280,40 280,75");c.coil(280,75,280,165,5);c.W("280,165 280,200");c.lab(54,125,"V");c.lab(178,110,"Ia");c.lab(234,110,"Ish");c.lab(70,32,"IL = Ia + Ish");c.lab(250,225,"Shunt field");},
+   conn:"Field winding (many turns, thin wire, high resistance) is connected in parallel with the armature across the supply.",ch:"Flux nearly constant; speed falls only slightly from no load to full load (nearly constant speed). T ∝ Ia.",adv:"Steady speed, simple speed control by field rheostat, safe at no load.",lim:"Only medium starting torque; not suited to very heavy starting loads.",app:"Lathes, drilling and milling machines, fans, blowers, centrifugal pumps, conveyors."},
+ series:{title:"D.C. series motor",draw(svg,c){c.term(40,40,"+");c.term(40,200,"−");c.W("45,40 90,40");c.coil(90,40,200,40,5);c.W("200,40 260,40 260,90");c.arm(260,120);c.W("260,150 260,200 45,200");c.lab(54,125,"V");c.lab(110,70,"Series field");c.lab(288,110,"Ia = IL");},
+   conn:"Field winding (few turns, thick wire, low resistance) is connected in series with the armature; the same current flows through both.",ch:"Flux rises with load current, so T ∝ Ia² (before saturation). Speed varies widely: high at light load, low at heavy load.",adv:"Very high starting torque; speed automatically adjusts to load.",lim:"Dangerous overspeed at no load; poor speed regulation; must not be belt-driven.",app:"Electric traction (older locomotives, trams), cranes, hoists, trolleys, conveyors with heavy starting."},
+ comp:{title:"D.C. compound motor (long shunt)",draw(svg,c){c.term(40,40,"+");c.term(40,200,"−");c.W("45,40 170,40");c.W("45,200 300,200");c.W("110,40 110,75");c.coil(110,75,110,165,5);c.W("110,165 110,200");c.coil(170,40,260,40,4);c.W("260,40 300,40 300,90");c.arm(300,120);c.W("300,150 300,200");c.lab(62,125,"V");c.lab(122,225,"Shunt field");c.lab(185,70,"Series field");},
+   conn:"Has both a shunt field and a series field on each pole. In the long-shunt connection shown, the shunt field is across the supply and the series field is in series with the armature (in short shunt it is across the armature only).",ch:"Cumulative compound: the two fluxes add. It gives higher starting torque than shunt, and a definite, safe no-load speed unlike series. (Differential compound, where fluxes oppose, is rarely used.)",adv:"Good starting torque with reasonably steady speed; handles sudden heavy loads well with a flywheel.",lim:"More complex and costly than shunt or series motors.",app:"Presses, shears, punching machines, rolling mills, lifts and elevators, reciprocating pumps."}
+};
+(function types(){const svg=$("#typeSvg");function show(k){const T=TYPES[k];svg.innerHTML="";T.draw(svg,circuitBits(svg));svg.setAttribute("aria-label","Connection diagram: "+T.title);
+  $("#typeInfo").innerHTML=`<h4 style="margin-top:0">${T.title}</h4><p><b>Field connection.</b> ${T.conn}</p><p><b>Characteristics.</b> ${T.ch}</p><p><b>Advantages.</b> ${T.adv}</p><p><b>Limitations.</b> ${T.lim}</p><p><b>Typical applications.</b> ${T.app}</p>`;}
+  seg("typeTabs",show);show("sep");})();
+/* ================= applications ================= */
+const ICON={
+ traction:'<rect x="10" y="14" width="44" height="34" rx="8"/><rect x="16" y="20" width="14" height="10" rx="2"/><rect x="34" y="20" width="14" height="10" rx="2"/><circle cx="20" cy="54" r="4"/><circle cx="44" cy="54" r="4"/><path d="M32 4V14M24 4H40"/>',
+ crane:'<path d="M12 58V10H52M12 16L52 10M44 10V30"/><path d="M40 30H48V38H40Z"/><path d="M6 58H24"/>',
+ conveyor:'<rect x="6" y="36" width="52" height="10" rx="5"/><circle cx="11" cy="41" r="3"/><circle cx="53" cy="41" r="3"/><rect x="16" y="24" width="10" height="12"/><rect x="34" y="20" width="12" height="16"/><path d="M14 46V58M50 46V58"/>',
+ machine:'<path d="M6 46H58V54H6Z"/><rect x="8" y="28" width="14" height="18"/><path d="M22 36H46"/><path d="M46 32L52 36L46 40Z"/><circle cx="15" cy="20" r="6"/>',
+ lift:'<rect x="14" y="6" width="36" height="52" rx="2"/><path d="M32 6V58"/><path d="M22 22L26 16L30 22M34 40L38 46L42 40"/>',
+ drive:'<circle cx="18" cy="32" r="12"/><circle cx="46" cy="32" r="12"/><path d="M18 20H46M18 44H46"/><circle cx="18" cy="32" r="3"/><circle cx="46" cy="32" r="3"/>',
+ battery:'<path d="M10 24H40V36H24L22 50H14L16 36H10Z"/><path d="M40 28H52M40 32H52"/><rect x="14" y="50" width="10" height="8"/>',
+ ev:'<path d="M6 40L12 26H44L54 40V48H6Z"/><circle cx="16" cy="50" r="5"/><circle cx="44" cy="50" r="5"/><path d="M28 14L24 24H30L26 32"/>'
+};
+const APPS=[
+ ["traction","Electric traction","D.C. series motor","Trains and trams must start a very heavy mass from rest. The series motor’s very high starting torque does this, and it slows down naturally on gradients. Older Indian Railways locomotives and trams used D.C. series traction motors."],
+ ["ev","Selected electric vehicles","Series or PMDC motor with chopper","Golf carts, battery forklifts and many e-rickshaws use D.C. motors fed through a chopper for smooth, efficient speed control from the battery. Most modern electric cars use A.C. or brushless motors instead."],
+ ["crane","Cranes and hoists","D.C. series or compound motor","Lifting a load from rest needs high starting torque. The load is always attached, so there is no danger of the series motor running unloaded."],
+ ["conveyor","Conveyors","Shunt motor (steady duty) or compound/series (heavy start)","A conveyor carrying a steady stream of material needs nearly constant speed (shunt). A conveyor that must start fully loaded needs higher starting torque (compound)."],
+ ["machine","Machine tools","D.C. shunt motor","Lathes, drilling and milling machines need nearly constant speed at a chosen setting, plus easy speed adjustment, which the shunt motor provides."],
+ ["lift","Elevators and lifting equipment","Compound motor or separately excited motor with voltage control","Lifts need good starting torque, smooth acceleration and accurate levelling at each floor, which voltage-controlled drives deliver."],
+ ["drive","Industrial drives","Separately excited motor with armature voltage control","Rolling mills, paper and textile machines need wide, precise and efficient speed control, often with several motors running in step."],
+ ["battery","Battery-operated equipment","Permanent magnet D.C. (PMDC) motor","Cordless drills, toys, wipers and power windows run directly from batteries. PMDC motors are compact and efficient because the magnets need no field current."]
+];
+$("#appCards").innerHTML=APPS.map(a=>`<div class="panel" style="margin:0"><svg viewBox="0 0 64 64" width="56" height="56" aria-hidden="true" fill="none" stroke="var(--enamel)" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round">${ICON[a[0]]}</svg><h4 style="margin:.4em 0 .2em">${a[1]}</h4><p style="margin:0 0 .4em;color:var(--copper);font-weight:600">${a[2]}</p><p style="margin:0;font-size:.95rem">${a[3]}</p></div>`).join("");
+
+/* ================= module 2 sims ================= */
+(function backEmf(){
+  const svg=$("#bemfSvg");svg.innerHTML="";const c=circuitBits(svg);
+  const path=svgEl("path",{d:"M60 110V40H460V95M460 145V200H60V130",fill:"none",stroke:"var(--ink)","stroke-width":2},svg);
+  const loop=svgEl("path",{d:"M60 110V40H460V200H60Z",fill:"none",stroke:"none"},svg);const L=loop.getTotalLength();
+  const dots=[];for(let i=0;i<16;i++)dots.push(svgEl("circle",{r:4,fill:"var(--enamel)"},svg));
+  svgEl("rect",{x:186,y:28,width:128,height:24,fill:"var(--surface-2)"},svg);c.res(190,40,310);svgEl("rect",{x:40,y:106,width:40,height:24,fill:"var(--surface-2)"},svg);
+  c.bat(60,120);svgEl("line",{x1:46,y1:116,x2:74,y2:116,stroke:"var(--ink)","stroke-width":3},svg);
+  txt(svg,82,105,"+",{"font-weight":700});txt(svg,22,124,"V",{"font-weight":700,"font-size":16});
+  svgEl("circle",{cx:460,cy:120,r:25,fill:"var(--copper-soft)",stroke:"var(--copper)","stroke-width":2.5},svg);txt(svg,460,126,"Eb",{"text-anchor":"middle","font-weight":700});txt(svg,474,92,"+",{"font-weight":700});txt(svg,474,158,"−",{"font-weight":700});
+  txt(svg,250,22,"Ra",{"text-anchor":"middle","font-weight":700});const vlab=txt(svg,250,72,"",{"text-anchor":"middle","font-size":12,fill:"var(--muted)"});
+  const ialab=txt(svg,350,225,"",{"text-anchor":"middle","font-weight":700,fill:"var(--copper)"});
+  let Ia=0,pos=0,last=null;
+  const V=$("#bV"),E=$("#bE"),R=$("#bR");
+  function upd(){const v=+V.value,e=+E.value,r=+R.value;Ia=(v-e)/r;
+    $("#bVo").textContent=v+" V";$("#bEo").textContent=e+" V";$("#bRo").textContent=r.toFixed(1)+" Ω";
+    $("#bNet").textContent=fmt(v-e,0)+" V";$("#bIa").textContent=fmt(Ia,1)+" A";$("#bPm").textContent=fmt(e*Ia/1000,2)+" kW";$("#bPc").textContent=fmt(Ia*Ia*r,0)+" W";
+    vlab.textContent=`drop IaRa = ${fmt(Ia*r,1)} V`;ialab.textContent=`Ia = ${fmt(Ia,1)} A`;
+    const box=$("#bIaBox");box.classList.toggle("alert",Math.abs(Ia)>20);
+    let m;
+    if(e>v)m=`<div class="status warn">E<sub>b</sub> is greater than V, so current flows backwards: the machine would be acting as a generator, feeding power to the supply.</div>`;
+    else if(e===0&&v>0)m=`<div class="status bad">Starting instant: E<sub>b</sub> = 0, so I<sub>a</sub> = V/R<sub>a</sub> = ${fmt(Ia,0)} A. That is about ${fmt(Ia/10,0)} times the rated current. A starter resistance is essential.</div>`;
+    else if(Ia>20)m=`<div class="status bad">I<sub>a</sub> is more than twice the rated current of about 10 A. The winding would overheat; this happens while the motor is still slow and E<sub>b</sub> is small.</div>`;
+    else if(Ia>=0)m=`<div class="status ok">Normal running: back EMF uses up ${fmt(v?e/v*100:0,0)}% of the supply voltage, so only a small net voltage drives the current.</div>`;
+    else m="";
+    $("#bMsg").innerHTML=m;}
+  [V,E,R].forEach(x=>x.addEventListener("input",upd));
+  $("#bStart").addEventListener("click",()=>{E.value=0;upd();});$("#bRun").addEventListener("click",()=>{V.value=220;E.value=215;R.value=0.5;upd();});
+  function anim(t){if(currentView!=="module2"){last=null;running=false;return;}if(last==null)last=t;const dt=Math.min(.05,(t-last)/1000);last=t;
+    const sp=Math.sign(Ia)*Math.min(400,20+Math.abs(Ia)*6)*(Ia===0?0:1);pos=(pos+sp*dt+L)%L;
+    dots.forEach((d,i)=>{const p=loop.getPointAtLength((pos+i*L/dots.length)%L);d.setAttribute("cx",p.x);d.setAttribute("cy",p.y);});requestAnimationFrame(anim);}
+  let running=false;
+  viewHooks.module2=()=>{if(!running){running=true;requestAnimationFrame(anim);}drawRel();};
+  dots.forEach((d,i)=>{const p=loop.getPointAtLength(i*L/dots.length);d.setAttribute("cx",p.x);d.setAttribute("cy",p.y);});
+  upd();
+})();
+(function ebCalc(){const ids=["eP","eF","eZ","eN"];let w="lap";seg("eW",v=>{w=v;u();});
+  function u(){const P=+$("#eP").value,F=+$("#eF").value,Z=+$("#eZ").value,N=+$("#eN").value,A=w==="lap"?P:2;
+    $("#ePo").textContent=P;$("#eFo").textContent=F.toFixed(3);$("#eZo").textContent=Z;$("#eNo").textContent=N;
+    const E=P*F*Z*N/(60*A);$("#eOut").innerHTML=`E<sub>b</sub> = <span class="frac"><span>${P} × ${F.toFixed(3)} × ${Z} × ${N}</span><span>60 × ${A}</span></span> = <b>${fmt(E,1)} V</b>`;}
+  ids.forEach(i=>$("#"+i).addEventListener("input",u));u();})();
+(function tCalc(){let w="lap";seg("tW",v=>{w=v;u();});
+  function u(){const P=+$("#tP").value,Z=+$("#tZ").value,F=+$("#tF").value,I=+$("#tI").value,A=w==="lap"?P:2;
+    $("#tPo").textContent=P;$("#tZo").textContent=Z;$("#tFo").textContent=F.toFixed(3);$("#tIo").textContent=I+" A";
+    const k=P*Z/(2*Math.PI*A),T=k*F*I;$("#tOut").innerHTML=`T = <span class="frac"><span>${P} × ${Z}</span><span>2π × ${A}</span></span> × ${F.toFixed(3)} × ${I} = ${fmt(k,2)} × ${fmt(F*I,3)} = <b>${fmt(T,1)} N·m</b>`;}
+  ["tP","tZ","tF","tI"].forEach(i=>$("#"+i).addEventListener("input",u));u();})();
+/* symbol matching */
+(function sym(){const S=[["Eb","Back EMF, volts (V)"],["Ia","Armature current, amperes (A)"],["Ra","Armature resistance, ohms (Ω)"],["Φ","Flux per pole, webers (Wb)"],["Z","Total number of armature conductors (no unit)"],["N","Speed, revolutions per minute (rpm)"],["A","Number of parallel paths (no unit)"],["T","Electromagnetic torque, newton-metres (N·m)"]];
+  const opts=S.map(s=>s[1]).sort();
+  function build(){$("#symMatch").innerHTML=S.map((s,i)=>`<div class="ctrl" style="grid-template-columns:70px 1fr"><label for="sym${i}" class="m" style="font-size:1.25rem">${s[0].replace(/^(E|I|R)([a-z])$/,"$1<sub>$2</sub>")}</label><select id="sym${i}" class="search" style="width:100%"><option value="">Choose…</option>${opts.map(o=>`<option>${o}</option>`).join("")}</select></div>`).join("");$("#symOut").innerHTML="";}
+  $("#symCheck").addEventListener("click",()=>{let ok=0;S.forEach((s,i)=>{const el=$("#sym"+i);const r=el.value===s[1];if(r)ok++;el.style.borderColor=el.value?(r?"var(--ok)":"var(--bad)"):"var(--line)";el.style.borderWidth="2px";});
+    $("#symOut").innerHTML=`<div class="status ${ok===S.length?"ok":"warn"}">${ok} of ${S.length} correct.${ok===S.length?" Every symbol matched.":" Green borders are right; fix the red ones."}</div>`;});
+  $("#symReset").addEventListener("click",build);build();})();
+/* plotting */
+function plot(cv,o){
+  const dpr=window.devicePixelRatio||1,w=cv.clientWidth||600,h=cv.clientHeight||260;cv.width=w*dpr;cv.height=h*dpr;const g=cv.getContext("2d");g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,w,h);
+  const ink=css("--ink"),mut=css("--muted"),line=css("--line"),en=css("--enamel"),cu=css("--copper");
+  const L=58,Rm=16,T=16,B=42,pw=w-L-Rm,ph=h-T-B;const X=x=>L+(x-o.x0)/(o.x1-o.x0)*pw,Y=y=>T+ph-(y-o.y0)/(o.y1-o.y0)*ph;
+  g.font="12px "+css("--f-body");g.strokeStyle=line;g.fillStyle=mut;g.lineWidth=1;
+  for(let i=0;i<=5;i++){const xv=o.x0+(o.x1-o.x0)*i/5,yv=o.y0+(o.y1-o.y0)*i/5;g.beginPath();g.moveTo(X(xv),T);g.lineTo(X(xv),T+ph);g.moveTo(L,Y(yv));g.lineTo(L+pw,Y(yv));g.stroke();
+    g.textAlign="center";g.fillText(o.fx?o.fx(xv):+xv.toFixed(3),X(xv),T+ph+16);g.textAlign="right";g.fillText(o.fy?o.fy(yv):Math.round(yv),L-6,Y(yv)+4);}
+  g.strokeStyle=ink;g.lineWidth=1.5;g.beginPath();g.moveTo(L,T);g.lineTo(L,T+ph);g.lineTo(L+pw,T+ph);g.stroke();
+  g.fillStyle=ink;g.textAlign="center";g.fillText(o.xl,L+pw/2,h-6);g.save();g.translate(14,T+ph/2);g.rotate(-Math.PI/2);g.fillText(o.yl,0,0);g.restore();
+  (o.curves||[]).forEach(cu2=>{g.strokeStyle=cu2.c||en;g.lineWidth=cu2.w||2.5;g.setLineDash(cu2.dash||[]);g.beginPath();let first=true;for(let i=0;i<=200;i++){const xv=o.x0+(o.x1-o.x0)*i/200;const yv=cu2.f(xv);if(!Number.isFinite(yv)||yv>o.y1*1.2||yv<o.y0-1){first=true;continue;}const yc=Math.min(yv,o.y1);first?g.moveTo(X(xv),Y(yc)):g.lineTo(X(xv),Y(yc));first=false;}g.stroke();g.setLineDash([]);});
+  (o.series||[]).forEach(s=>{g.strokeStyle=s.c;g.lineWidth=2;g.beginPath();s.pts.forEach((p,i)=>{const px=X(p[0]),py=Y(Math.min(o.y1,Math.max(o.y0,p[1])));i?g.lineTo(px,py):g.moveTo(px,py);});g.stroke();});
+  if(o.pt){const[px,py]=o.pt;if(py<=o.y1&&py>=o.y0){g.fillStyle=cu;g.beginPath();g.arc(X(px),Y(py),6,0,7);g.fill();g.strokeStyle=css("--surface");g.lineWidth=2;g.stroke();g.setLineDash([4,4]);g.strokeStyle=cu;g.lineWidth=1;g.beginPath();g.moveTo(X(px),Y(py));g.lineTo(X(px),T+ph);g.moveTo(X(px),Y(py));g.lineTo(L,Y(py));g.stroke();g.setLineDash([]);}}
+}
+const REL={
+ EN:{xl:"Speed N (rpm)",yl:"Back EMF Eb (V)",x0:0,x1:2000,y0:0,y1:350,step:50,f:x=>0.16*x,xs:"N",xu:"rpm",txt:(x,y)=>`With flux fixed at 0.02 Wb (4-pole, lap, Z = 480), E<sub>b</sub> = 0.16 N. At ${x} rpm, E<sub>b</sub> = ${fmt(y,0)} V. A straight line through the origin: <b>E<sub>b</sub> ∝ N</b>. At standstill E<sub>b</sub> = 0.`},
+ EF:{xl:"Flux Φ (Wb)",yl:"Back EMF Eb (V)",x0:0,x1:0.04,y0:0,y1:350,step:0.001,f:x=>8000*x,xs:"Φ",xu:"Wb",fx:v=>v.toFixed(3),txt:(x,y)=>`At a fixed speed of 1000 rpm, E<sub>b</sub> = 8000 Φ. At Φ = ${x.toFixed(3)} Wb, E<sub>b</sub> = ${fmt(y,0)} V. <b>E<sub>b</sub> ∝ Φ</b>: weaker field, less back EMF at the same speed.`},
+ TI:{xl:"Armature current Ia (A)",yl:"Torque T (N·m)",x0:0,x1:100,y0:0,y1:320,step:1,f:x=>1.528*x,xs:"Ia",xu:"A",txt:(x,y)=>`Shunt motor, flux constant at 0.02 Wb: T = 1.528 I<sub>a</sub>. At ${x} A, T = ${fmt(y,1)} N·m. Straight line: <b>T ∝ I<sub>a</sub></b>.`},
+ TS:{xl:"Armature current Ia (A)",yl:"Torque T (N·m)",x0:0,x1:100,y0:0,y1:320,step:1,f:x=>0.03056*x*x,xs:"Ia",xu:"A",cmp:x=>1.528*x,txt:(x,y)=>`Series motor (flux grows with current, saturation ignored): T = 0.0306 I<sub>a</sub>². At ${x} A, T = ${fmt(y,1)} N·m. The parabola <b>T ∝ I<sub>a</sub>²</b> rises much faster than the shunt line (dashed), which is why series motors give high starting torque.`},
+ NF:{xl:"Flux Φ (Wb)",yl:"Speed N (rpm)",x0:0.008,x1:0.04,y0:0,y1:2600,step:0.001,f:x=>20/x,xs:"Φ",xu:"Wb",fx:v=>v.toFixed(3),txt:(x,y)=>`With E<sub>b</sub> held at 160 V, N = 20/Φ. At Φ = ${x.toFixed(3)} Wb, N = ${fmt(y,0)} rpm. A hyperbola: <b>N ∝ 1/Φ</b>. Halving the flux doubles the speed; this is the basis of field control.`}
+};
+let relKey="EN";
+function drawRel(){const r=REL[relKey];const s=$("#relX");const x=+s.value;const y=r.f(x);
+  $("#relXl").innerHTML=r.xs.replace("Ia","I<sub>a</sub>")+" ("+r.xu+")";$("#relXo").textContent=(r.xu==="Wb"?x.toFixed(3):x)+" "+r.xu;
+  const curves=[{f:r.f}];if(r.cmp)curves.push({f:r.cmp,c:css("--steel"),dash:[6,5],w:1.5});
+  plot($("#relPlot"),{xl:r.xl,yl:r.yl,x0:r.x0,x1:r.x1,y0:r.y0,y1:r.y1,fx:r.fx,curves,pt:[x,y]});$("#relTxt").innerHTML=r.txt(x,y);}
+seg("relSel",v=>{relKey=v;const r=REL[v];const s=$("#relX");s.min=r.x0===0.008?0.008:r.x0;s.max=r.x1;s.step=r.step;s.value=(r.x0+r.x1)/2;if(v==="NF")s.value=0.02;drawRel();});
+$("#relX").addEventListener("input",drawRel);
+(function(){const r=REL.EN;const s=$("#relX");s.min=r.x0;s.max=r.x1;s.step=r.step;s.value=1000;})();
+/* ================= shunt motor model (shared) ================= */
+const MOTOR={Vr:220,Ra:0.5,Rsh:220,ke:0.215,kt:0.215*60/(2*Math.PI),Tf:0.6,Irated:10};
+function steady({Va,phi,Rt,TL}){const T=TL+MOTOR.Tf;let Ia=T/(MOTOR.kt*phi);let N=(Va-Ia*Rt)/(MOTOR.ke*phi);let stalled=false;if(N<0){N=0;Ia=Va/Rt;stalled=true;}const Eb=MOTOR.ke*phi*N;return{Ia,N,Eb,T,stalled};}
+const LOADS={light:5,half:10,full:20.5};
+/* ================= module 3 sims ================= */
+function scCircuit(svg,method){svg.innerHTML=`<defs><marker id="rh${method}" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" refX="2" refY="6" orient="auto"><path d="M0 0L12 6L0 12z" fill="var(--enamel)"/></marker></defs>`;const c=circuitBits(svg);const fl=[];
+  const flow=(pts)=>{const p=svgEl("polyline",{points:pts,fill:"none",stroke:"var(--enamel)","stroke-width":2.2,"stroke-dasharray":"5 9",class:"flow"},svg);fl.push(p);return p;};
+  const rheo=(x1,y,x2,lab)=>{svgEl("rect",{x:x1,y:y-10,width:x2-x1,height:20,fill:"var(--surface-2)"},svg);c.res(x1,y,x2);svgEl("line",{x1:x1+4,y1:y+16,x2:x2-4,y2:y-18,stroke:"var(--enamel)","stroke-width":2.5,"marker-end":`url(#rh${method})`},svg);c.lab((x1+x2)/2,y-22,lab,{"text-anchor":"middle",fill:"var(--enamel)","font-weight":700});};
+  const rheoV=(x,y1,y2,lab)=>{svgEl("rect",{x:x-10,y:y1,width:20,height:y2-y1,fill:"var(--surface-2)"},svg);let d=`M${x} ${y1}`;const n=6,s=(y2-y1)/n;for(let i=0;i<n;i++)d+=` l${i%2?8:-8} ${s/2} l${i%2?-8:8} ${s/2}`;svgEl("path",{d,fill:"none",stroke:"var(--ink)","stroke-width":2},svg);svgEl("line",{x1:x-16,y1:y2-4,x2:x+16,y2:y1+4,stroke:"var(--enamel)","stroke-width":2.5,"marker-end":`url(#rh${method})`},svg);c.lab(x+16,(y1+y2)/2,lab,{fill:"var(--enamel)","font-weight":700});};
+  if(method==="field"){c.term(40,40,"+");c.term(40,220,"−");c.W("45,40 300,40");c.W("45,220 300,220");c.W("150,40 150,105");c.arm(150,130);c.W("150,160 150,220");
+    c.W("280,40 280,50");rheoV(280,50,100,"Rf");c.W("280,100 280,115");c.coil(280,115,280,195,4);c.W("280,195 280,220");c.lab(214,165,"Shunt field");c.lab(54,135,"V");
+    flow("45,40 280,40 280,220 45,220");flow("150,40 150,220");}
+  if(method==="arm"){c.term(40,40,"+");c.term(40,220,"−");c.W("45,40 110,40");c.W("200,40 260,40 260,105");rheo(110,40,200,"Rext");c.arm(260,130);c.W("260,160 260,220 45,220");
+    c.W("80,40 80,95");c.coil(80,95,80,175,4);c.W("80,175 80,220");c.lab(90,200,"Shunt field");c.lab(54,135,"V");c.lab(290,120,"Ia");
+    flow("45,40 260,40 260,220 45,220");}
+  if(method==="volt"){svgEl("circle",{cx:60,cy:130,r:28,fill:"var(--enamel-soft)",stroke:"var(--enamel)","stroke-width":2.5},svg);svgEl("line",{x1:40,y1:150,x2:80,y2:110,stroke:"var(--enamel)","stroke-width":2.5,"marker-end":`url(#rhvolt)`},svg);txt(svg,60,135,"V",{"text-anchor":"middle","font-weight":700});
+    c.W("60,102 60,40 170,40 170,105");c.arm(170,130);c.W("170,160 170,220 60,220 60,158");c.lab(14,240,"Variable D.C. supply (converter)");
+    c.W("250,60 320,60 320,122");c.W("320,138 320,200 250,200");c.W("250,60 250,85");c.coil(250,85,250,175,4);c.W("250,175 250,200");c.bat(320,130);c.lab(245,226,"Field: separate");c.lab(245,241,"constant supply");
+    flow("60,102 60,40 170,40 170,220 60,220 60,158");}
+  [...svg.children].filter(e=>e.tagName!=="polyline"&&e.tagName!=="defs").forEach(e=>svg.appendChild(e));
+  return fl;}
+(function speedSims(){
+  const CFG={
+   field:{label:"Field rheostat Rf",min:0,max:150,step:5,val:0,unit:"Ω",setup:v=>({Va:220,phi:220/(220+v),Rt:MOTOR.Ra}),plot:"Speed N (rpm) against flux (% of rated)"},
+   arm:{label:"Armature resistance Rext",min:0,max:10,step:0.5,val:0,unit:"Ω",setup:v=>({Va:220,phi:1,Rt:MOTOR.Ra+v}),plot:"Speed N (rpm) against Rext (Ω)"},
+   volt:{label:"Armature voltage V",min:20,max:220,step:5,val:220,unit:"V",setup:v=>({Va:v,phi:1,Rt:MOTOR.Ra}),plot:"Speed N (rpm) against armature voltage (V)"}
+  };
+  $$(".sc").forEach(box=>{const m=box.dataset.method,C=CFG[m];let load="full";
+    box.insertAdjacentHTML("beforeend",`<div class="grid2"><svg viewBox="0 0 360 250" class="stage" role="img" aria-label="Speed control circuit"></svg><div>
+      <div class="ctrl"><label for="sc_${m}">${C.label.replace("Rext","R<sub>ext</sub>").replace("Rf","R<sub>f</sub>")}</label><input type="range" id="sc_${m}" min="${C.min}" max="${C.max}" step="${C.step}" value="${C.val}"><output></output></div>
+      <div class="row" style="margin:6px 0"><span>Load torque:</span><div class="seg" id="sl_${m}"><button aria-pressed="false" data-v="light">Light 5 N·m</button><button aria-pressed="false" data-v="half">Half 10 N·m</button><button aria-pressed="true" data-v="full">Full 20.5 N·m</button></div></div>
+      <div class="readouts"></div><div class="msg" aria-live="polite"></div></div></div>
+      <canvas class="plot" style="margin-top:10px" aria-label="${C.plot}"></canvas><p class="sim-tag">${m==="arm"?"Solid line: selected load. Dashed line: light load. The gap between them shows how much speed depends on load. ":""}Simulated 220 V shunt motor (R<sub>a</sub> = 0.5 Ω, R<sub>sh</sub> = 220 Ω, about 1000 rpm at rated load). Steady-state values from N ∝ (V − I<sub>a</sub>R)/Φ with constant load torque; magnetic saturation neglected. Illustrative, not measured.</p>`);
+    const svg=$("svg",box),sl=$("input",box),out=$("output",box),ro=$(".readouts",box),msg=$(".msg",box),cv=$("canvas",box);const flows=scCircuit(svg,m);
+    seg("sl_"+m,v=>{load=v;u();});
+    function u(){const v=+sl.value;out.textContent=(C.unit==="Ω"&&C.step<1?v.toFixed(1):v)+" "+C.unit;const s=C.setup(v),TL=LOADS[load];const r=steady({...s,TL});
+      const If=m==="field"?220/(220+v):1;const loss=r.Ia*r.Ia*(s.Rt-MOTOR.Ra);const pin=s.Va*r.Ia;
+      ro.innerHTML=[["Field current I<sub>sh</sub>",fmt(If,2)+" A"],["Flux Φ",fmt(s.phi*100,0)+" %"],["Armature current I<sub>a</sub>",fmt(r.Ia,1)+" A",r.Ia>MOTOR.Irated*1.15],["Back EMF E<sub>b</sub>",fmt(r.Eb,0)+" V"],["Speed N",fmt(r.N,0)+" rpm"],m==="arm"?["Loss in R<sub>ext</sub>",fmt(loss,0)+" W",loss>300]:["Armature input",fmt(pin/1000,2)+" kW"]].map(x=>`<div class="ro${x[2]?" alert":""}"><span>${x[0]}</span><b>${x[1]}</b></div>`).join("");
+      let t="";
+      if(r.stalled)t=`<div class="status bad">The motor cannot develop enough torque and stalls (N = 0). Reduce ${m==="volt"?"the load or raise the voltage":"the resistance or the load"}.</div>`;
+      else if(m==="field"&&v===0)t=`<div class="status ok">Field at full strength: the motor runs at its normal speed. Increase R<sub>f</sub> to weaken the field.</div>`;
+      else if(m==="field")t=r.Ia>MOTOR.Irated*1.15?`<div class="status warn">Speed has risen above normal, but I<sub>a</sub> is ${fmt(r.Ia,1)} A, above the rated 10 A: with less flux, more current is needed for the same torque. Continuous running here would overheat the armature.</div>`:`<div class="status ok">Reducing flux raises speed above normal. At this load I<sub>a</sub> stays within rating.</div>`;
+      else if(m==="arm")t=`<div class="status ${v>0?"warn":"ok"}">${v>0?`Speed reduced below normal, but ${fmt(loss,0)} W (${fmt(loss/pin*100,0)}% of armature input) is wasted as heat in R<sub>ext</sub>. Try switching between light and full load to see the poor speed regulation.`:"No external resistance: motor runs at its normal speed."}</div>`;
+      else t=`<div class="status ok">Speed follows the armature voltage almost proportionally, with no resistor losses. I<sub>a</sub> depends only on the load, because flux is constant.</div>`;
+      msg.innerHTML=t;
+      const dur=r.Ia>0?Math.max(.25,Math.min(4,8/r.Ia)):0;flows.forEach(f=>{f.style.animation=reduceMotion||dur===0?"none":`dcmflow ${dur}s linear infinite`;});
+      const f=x=>{const s2=C.setup(x);return steady({...s2,TL}).N;};
+      if(m==="field"){plot(cv,{xl:"Flux Φ (% of rated)",yl:"Speed N (rpm)",x0:50,x1:100,y0:0,y1:2200,curves:[{f:p=>{const ph=p/100;return steady({Va:220,phi:ph,Rt:MOTOR.Ra,TL}).N;}}],fx:v=>Math.round(v),pt:[s.phi*100,r.N]});}
+      else if(m==="arm"){plot(cv,{xl:"External armature resistance Rext (Ω)",yl:"Speed N (rpm)",x0:0,x1:10,y0:0,y1:1200,curves:[{f},{f:x=>steady({...C.setup(x),TL:LOADS.light}).N,c:css("--steel"),dash:[6,5],w:1.5}],fx:v=>v.toFixed(0),pt:[v,r.N]});}
+      else plot(cv,{xl:"Armature voltage V (V)",yl:"Speed N (rpm)",x0:0,x1:220,y0:0,y1:1200,curves:[{f:x=>Math.max(0,f(x))}],fx:v=>Math.round(v),pt:[v,r.N]});
+    }
+    sl.addEventListener("input",u);box._u=u;
+  });
+  viewHooks.module3=()=>$$(".sc").forEach(b=>b._u());
+})();
+document.head.insertAdjacentHTML("beforeend","<style>@keyframes dcmflow{to{stroke-dashoffset:-28}}</style>");
+
+/* ================= virtual lab ================= */
+(function lab(){
+  const svg=$("#labMotor");svg.innerHTML="";
+  const g=svgEl("g",{transform:"translate(8 22) scale(.64)"},svg);const tmp=svgEl("svg",{},null);const m=drawEnd(tmp,{slots:12});[...tmp.childNodes].forEach(n=>g.appendChild(n));$$(".part",g).forEach(p=>p.classList.remove("part"));
+  const cxg=320,cyg=150;svgEl("path",{d:arcPath(cxg,cyg,58,66,Math.PI*0.75,Math.PI*2.25),fill:"var(--steel-3)"},svg);
+  svgEl("path",{d:arcPath(cxg,cyg,58,66,Math.PI*0.75+Math.PI*1.5*2000/2400,Math.PI*2.25),fill:"var(--bad)",opacity:.7},svg);
+  for(let i=0;i<=6;i++){const a=Math.PI*0.75+Math.PI*1.5*i/6;txt(svg,cxg+46*Math.cos(a),cyg+46*Math.sin(a)+4,String(i*400),{"text-anchor":"middle","font-size":10,fill:"var(--muted)"});}
+  const needle=svgEl("line",{x1:cxg,y1:cyg,x2:cxg,y2:cyg-56,stroke:"var(--ink)","stroke-width":3,"stroke-linecap":"round"},svg);svgEl("circle",{cx:cxg,cy:cyg,r:6,fill:"var(--ink)"},svg);
+  txt(svg,cxg,cyg+36,"rpm",{"text-anchor":"middle","font-size":12,fill:"var(--muted)"});const rpmT=txt(svg,cxg,cyg+62,"0",{"text-anchor":"middle","font-size":22,"font-weight":700});
+  const lampT=txt(svg,140,292,"",{"text-anchor":"middle","font-size":12,fill:"var(--muted)"});txt(svg,140,14,"Rotation shown slowed down",{"text-anchor":"middle","font-size":11,fill:"var(--muted)"});
+  const ctl={V:$("#lV"),Rf:$("#lRf"),Rx:$("#lRx"),TL:$("#lTL"),sep:$("#lSep"),open:$("#lOpen")};
+  const S={on:false,w:0,Ia:0,peak:0,trip:"",ang:0,hist:[],tAcc:0,simT:0,If:0,phi:0,Eb:0,Te:0};
+  const J=1.5;
+  function inputs(){$("#lVo").textContent=ctl.V.value+" V";$("#lRfo").textContent=ctl.Rf.value+" Ω";$("#lRxo").textContent=(+ctl.Rx.value).toFixed(1)+" Ω";$("#lTLo").textContent=ctl.TL.value+" N·m";}
+  Object.values(ctl).forEach(c=>c.addEventListener("input",inputs));inputs();
+  function physics(dt){const V=+ctl.V.value,Rf=+ctl.Rf.value,Rt=MOTOR.Ra+(+ctl.Rx.value),TL=+ctl.TL.value;
+    const Vf=ctl.sep.checked?220:V;S.If=ctl.open.checked?0:Vf/(MOTOR.Rsh+Rf);S.phi=Math.max(0.06,S.If/1);
+    const N=S.w*60/(2*Math.PI);S.Eb=MOTOR.ke*S.phi*N;S.Ia=S.on?(V-S.Eb)/Rt:0;S.Te=MOTOR.kt*S.phi*S.Ia;
+    const Tload=(TL+MOTOR.Tf+0.004*S.w);let net=S.Te-Tload;
+    if(S.w<=1e-4&&net<0){S.w=0;}else S.w=Math.max(0,S.w+net/J*dt);
+    if(S.on){S.peak=Math.max(S.peak,S.Ia);
+      if(S.Ia>60){S.on=false;S.trip=`Breaker tripped: armature current reached ${fmt(S.Ia,0)} A (limit 60 A). ${N<50?"At standstill E<sub>b</sub> = 0, so I<sub>a</sub> = V/(R<sub>a</sub> + R<sub>ext</sub>). Add starter resistance before switching on.":ctl.open.checked?"With the field open, flux is only the small residual value, so a huge current is needed to carry the load.":"The current rose too high: reduce load or resistance change more gradually."}`;}
+      else if(N>2000){S.on=false;S.trip=`Overspeed trip at ${fmt(N,0)} rpm. ${ctl.open.checked?"The field circuit is open, so flux collapsed to its residual value and N ∝ 1/Φ made the motor race.":"Very weak field: N ∝ 1/Φ."}`;}}
+  }
+  function readouts(){const N=S.w*60/(2*Math.PI),V=+ctl.V.value;const pin=S.on?V*(S.Ia+S.If):0,pout=(+ctl.TL.value)*S.w;
+    const items=[["Speed N",fmt(N,0)+" rpm",N>1800],["Armature current I<sub>a</sub>",fmt(S.Ia,1)+" A",S.Ia>12],["Peak I<sub>a</sub> since start",fmt(S.peak,0)+" A",S.peak>30],["Back EMF E<sub>b</sub>",fmt(S.Eb,0)+" V"],["Field current I<sub>sh</sub>",fmt(S.If,2)+" A"],["Flux Φ",fmt(S.phi*100,0)+" %",ctl.open.checked],["Torque developed T",fmt(S.Te,1)+" N·m"],["Efficiency (approx.)",pin>50&&pout>0?fmt(Math.min(99,pout/pin*100),0)+" %":"–"]];
+    $("#labRO").innerHTML=items.map(x=>`<div class="ro${x[2]?" alert":""}"><span>${x[0]}</span><b>${x[1]}</b></div>`).join("");
+    rpmT.textContent=fmt(N,0);const a=Math.PI*0.75+Math.PI*1.5*Math.min(N,2400)/2400;needle.setAttribute("x2",cxg+56*Math.cos(a));needle.setAttribute("y2",cyg+56*Math.sin(a));
+    let msg;
+    if(S.trip)msg=`<div class="status bad">${S.trip} Press Reset bench to try again.</div>`;
+    else if(!S.on)msg=`<div class="status warn">Motor switched off. Set the controls and press Switch ON.</div>`;
+    else if(ctl.open.checked)msg=`<div class="status bad">Field circuit open: flux has collapsed to its small residual value. With little flux, back EMF is tiny, so current surges, and the motor keeps accelerating with nothing to limit its speed (N ∝ 1/Φ). Expect a protection trip.</div>`;
+    else if(S.Ia>12&&N<200)msg=`<div class="status warn">Starting: speed is low, so back EMF is small and current is high (${fmt(S.Ia,0)} A). As speed builds, cut out R<sub>ext</sub> step by step.</div>`;
+    else if(S.Ia>12)msg=`<div class="status warn">I<sub>a</sub> = ${fmt(S.Ia,1)} A is above the rated 10 A. Continuous running would overheat the armature.</div>`;
+    else msg=`<div class="status ok">Running steadily. E<sub>b</sub> = ${fmt(S.Eb,0)} V balances the supply: V = E<sub>b</sub> + I<sub>a</sub>(R<sub>a</sub> + R<sub>ext</sub>).</div>`;
+    if($("#labMsg").dataset.m!==msg){$("#labMsg").innerHTML=msg;$("#labMsg").dataset.m=msg;}
+    const sw=$("#labSw");sw.textContent=S.on?"Switch OFF":"Switch ON";sw.classList.toggle("on",S.on);sw.setAttribute("aria-pressed",S.on?"true":"false");
+    lampT.textContent=S.on?"Supply ON":"Supply OFF";
+  }
+  function trace(){const cv=$("#labPlot");const H=S.hist;const t1=S.simT,t0=Math.max(0,t1-12);
+    plot(cv,{xl:"Time (s)",yl:"rpm ÷ 10  /  Ia (A)",x0:t0,x1:Math.max(12,t1),y0:0,y1:220,fx:v=>v.toFixed(0),series:[{c:css("--enamel"),pts:H.map(h=>[h[0],h[1]/10])},{c:css("--copper"),pts:H.map(h=>[h[0],Math.max(0,h[2])])}]});}
+  let last=null,running=false;
+  function loop(t){if(currentView!=="lab"){running=false;last=null;return;}if(last==null)last=t;const dt=Math.min(.05,(t-last)/1000);last=t;
+    const n=25;for(let i=0;i<n;i++)physics(dt/n);S.simT+=dt;S.tAcc+=dt;
+    if(S.tAcc>0.1){S.tAcc=0;S.hist.push([S.simT,S.w*60/(2*Math.PI),S.Ia]);S.hist=S.hist.filter(h=>h[0]>=S.simT-12);trace();}
+    const N=S.w*60/(2*Math.PI);if(!reduceMotion)S.ang+=dt*(N/600)*360;m.rotor.setAttribute("transform",`rotate(${-S.ang} 200 200)`);
+    m.conds.forEach(c=>{const a=c.a-S.ang*Math.PI/180;setSym(c.sym,Math.cos(a)<0?1:-1);c.sym.setAttribute("transform",`rotate(${S.ang})`);c.sym.style.opacity=S.on&&S.Ia>0.5?1:.15;});
+    readouts();requestAnimationFrame(loop);}
+  viewHooks.lab=()=>{if(!running){running=true;requestAnimationFrame(loop);}trace();};
+  $("#labSw").addEventListener("click",()=>{if(S.trip)return;S.on=!S.on;if(S.on)S.peak=0;readouts();});
+  $("#labReset").addEventListener("click",()=>{Object.assign(S,{on:false,w:0,Ia:0,peak:0,trip:"",hist:[],simT:0});ctl.V.value=220;ctl.Rf.value=0;ctl.Rx.value=5;ctl.TL.value=10;ctl.sep.checked=false;ctl.open.checked=false;inputs();readouts();trace();});
+  let rows=[];
+  function table(){$("#labTbl").innerHTML=rows.length?rows.map((r,i)=>`<tr><td>${i+1}</td>${r.map(x=>`<td>${x}</td>`).join("")}</tr>`).join(""):`<tr><td colspan="8">No readings yet. Let the motor settle, then press Record reading.</td></tr>`;}
+  $("#labRec").addEventListener("click",()=>{rows.push([ctl.V.value,ctl.Rf.value,(+ctl.Rx.value).toFixed(1),ctl.TL.value,fmt(S.If,2),fmt(S.Ia,1),fmt(S.w*60/(2*Math.PI),0)]);table();});
+  $("#labClr").addEventListener("click",()=>{rows=[];table();});
+  readouts();
+})();
+/* ================= section quizzes ================= */
+$$(".quiz[data-quiz]").forEach(b=>{const Q=QUIZ[b.dataset.quiz];if(Q)renderQuiz(b,Q.qs,Q.sec);});
+(function(){const b=$("#sortQ");b.dataset.quiz="q16sort";renderQuiz(b,QUIZ.q16sort.qs,null);$(".panel-head",b).remove();})();
+
+/* ================= final assessment ================= */
+(function finalTest(){
+  const form=$("#finalForm");const MODS={1:"Module 1: Construction and types",2:"Module 2: Back EMF and torque",3:"Module 3: Speed control"};
+  FINAL.forEach(q=>{if(q.t==="tf"&&typeof q.a==="boolean")q.a=q.a?0:1;});
+  function build(){form.innerHTML=FINAL.map((q,i)=>`<div class="q" data-i="${i}"><div class="q-top"><p class="qt">${i+1}. ${q.q}</p><span class="q-type">Module ${q.m}, ${TYPE_LABEL[q.t].toLowerCase()}</span></div>${qInput(q,"fq"+i)}<div class="fb"></div></div>`).join("");$("#finalResult").innerHTML="";$("#finalSubmit").disabled=false;left();}
+  function val(i){const d=$(`.q[data-i="${i}"]`,form);const q=FINAL[i];if(q.t==="mcq"||q.t==="tf"){const r=$("input:checked",d);return r?r.value:null;}const v=$("input",d).value.trim();return v===""?null:v;}
+  function left(){const n=FINAL.filter((q,i)=>val(i)===null).length;$("#finalLeft").textContent=n?`${n} question${n>1?"s":""} unanswered`:"All questions answered";}
+  form.addEventListener("input",left);form.addEventListener("change",left);
+  $("#finalSubmit").addEventListener("click",()=>{
+    const un=FINAL.map((q,i)=>val(i)===null?i+1:null).filter(Boolean);
+    if(un.length&&!confirm(`Questions ${un.join(", ")} are unanswered and will be marked wrong. Submit anyway?`))return;
+    const per={1:[0,0],2:[0,0],3:[0,0]};let score=0;
+    FINAL.forEach((q,i)=>{const v=val(i);const ok=v!==null&&checkQ(q,v);per[q.m][1]++;if(ok){per[q.m][0]++;score++;}
+      const d=$(`.q[data-i="${i}"]`,form);$$("input",d).forEach(x=>x.disabled=true);
+      $$(".opt",d).forEach((o,j)=>{if(j===q.a)o.classList.add("right");else if(String(j)===v)o.classList.add("wrong");});
+      const fb=$(".fb",d);fb.className="fb show "+(ok?"right":"wrong");fb.innerHTML=(ok?"<b>Correct.</b> ":`<b>Incorrect.</b> Correct answer: <b>${correctText(q)}</b>. `)+q.e;});
+    const pct=Math.round(score/FINAL.length*100);
+    const verdict=pct>=80?"Excellent. You are ready for the exam on this unit.":pct>=60?"Good. Revise the modules where you scored lowest.":pct>=40?"Fair. Work through the weaker modules again, then retake.":"Needs more work. Go back through each module and its knowledge checks, then retake.";
+    $("#finalResult").innerHTML=`<div class="panel"><div class="row" style="gap:24px;align-items:flex-end"><div><div class="score-big">${score} / ${FINAL.length}</div><div>${pct}%</div></div><p style="margin:0;max-width:44ch">${verdict}</p></div>
+      <div class="bars">${Object.keys(per).map(k=>{const[c,t]=per[k];const p=Math.round(c/t*100);return `<div class="bar-row"><span>${MODS[k].split(":")[0]}</span><div class="bar-track" role="img" aria-label="${MODS[k]}: ${c} of ${t}"><i style="width:${p}%"></i></div><b>${c}/${t}</b></div>`;}).join("")}</div>
+      <p class="sim-tag">Scroll up to see the correct answer and explanation under each question.</p>
+      <div class="row"><button class="btn primary" id="finalRetake">Retake assessment</button>${Object.keys(per).filter(k=>per[k][0]/per[k][1]<0.67).map(k=>`<button class="btn" data-go="module${k}">Revise ${MODS[k].split(":")[0]}</button>`).join("")}</div></div>`;
+    $("#finalSubmit").disabled=true;store.set("dcm-final",{score,pct,when:Date.now()});if(pct>=50)setDone("final",true);
+    $("#finalRetake").addEventListener("click",()=>{build();window.scrollTo(0,$("#v-assessment").offsetTop);});
+    $("#finalResult").scrollIntoView({block:"start"});
+  });
+  build();
+})();
+
+/* ================= revision ================= */
+const GLOSS=[
+ ["Armature","The rotating part of a D.C. motor: core, winding and commutator on the shaft."],
+ ["Armature reaction","The effect of the armature’s own magnetic field on the main field; it distorts and slightly weakens the main flux."],
+ ["Back EMF (Eb)","EMF induced in the rotating armature that opposes the supply voltage (Lenz’s law)."],
+ ["Brush","Stationary carbon or graphite block that carries current to the rotating commutator."],
+ ["Commutation","The process of reversing current in an armature coil as it passes the neutral zone."],
+ ["Commutator","Cylinder of copper segments insulated by mica; with the brushes it keeps torque unidirectional."],
+ ["Compound motor","Motor with both shunt and series field windings; cumulative if their fluxes aid."],
+ ["Couple","Two equal, opposite, parallel forces that produce rotation without translation."],
+ ["Eddy current","Circulating current induced in iron parts; reduced by using thin laminations."],
+ ["Field weakening","Reducing the field flux to raise motor speed above normal."],
+ ["Flux per pole (Φ)","Magnetic flux leaving one pole, measured in webers (Wb)."],
+ ["Fleming’s Left-Hand Rule","Rule giving the direction of force on a current-carrying conductor in a magnetic field."],
+ ["Lap winding","Armature winding with as many parallel paths as poles (A = P)."],
+ ["Lenz’s law","An induced EMF always opposes the cause that produces it."],
+ ["Neutral zone","Region midway between poles where conductors cut no flux and produce no torque."],
+ ["Rheostat","Variable resistance used to control current, for example in the field or armature circuit."],
+ ["Separately excited","Motor whose field winding is supplied from an independent D.C. source."],
+ ["Series motor","Motor whose field winding is in series with the armature; high starting torque."],
+ ["Shaft torque","Useful torque available at the shaft; electromagnetic torque minus torque lost to iron and mechanical losses."],
+ ["Shunt motor","Motor whose field winding is in parallel with the armature; nearly constant speed."],
+ ["Speed regulation","How much the speed changes from no load to full load; smaller change means better regulation."],
+ ["Starter","Device that limits starting current by adding resistance in the armature circuit, and protects against field failure and no-volt."],
+ ["Torque","Turning effect of a force about an axis, in newton-metres (N·m)."],
+ ["Ward-Leonard system","Speed-control scheme where a motor-generator set supplies variable voltage to the motor armature."],
+ ["Wave winding","Armature winding with only two parallel paths (A = 2) whatever the number of poles."],
+ ["Yoke","Outer frame of the motor; supports the poles and carries flux between them."]
+];
+function renderGloss(f=""){const q=f.toLowerCase();$("#gloss").innerHTML=GLOSS.filter(g=>!q||(g[0]+g[1]).toLowerCase().includes(q)).map(g=>`<dt>${g[0]}</dt><dd>${g[1]}</dd>`).join("")||"<dt>No match</dt><dd>Try a shorter word, such as “field” or “torque”.</dd>";}
+$("#glossSearch").addEventListener("input",e=>renderGloss(e.target.value));renderGloss();
+const FAQ=[
+ ["Why does a motor draw a huge current at starting?","At standstill the armature is not moving, so back EMF is zero. The only thing opposing the supply is the small armature resistance, so I = V/Ra is very large. A starter adds resistance until the motor speeds up and back EMF builds."],
+ ["What is the difference between back EMF and supply voltage?","Supply voltage is applied from outside. Back EMF is generated inside the rotating armature and opposes it. Their difference, V − Eb, drives the armature current through Ra."],
+ ["Why is a series motor never started without load?","With no load the current is small, so the series field flux is small. Since N ∝ 1/Φ, speed rises to a dangerous value and can damage the armature."],
+ ["How can I reverse a D.C. motor?","Reverse the connections of either the armature or the field, but not both. Reversing the supply terminals reverses both and the direction stays the same."],
+ ["Why can field control only raise the speed?","At zero regulator resistance the field is already at full strength. Adding resistance can only reduce the flux, and less flux means higher speed."],
+ ["Why is armature resistance control inefficient?","The full armature current passes through the external resistance, wasting Ia²Rext as heat. At low speed a large share of the input is lost this way."],
+ ["Do I need to derive the Eb and torque equations?","No. For this unit you must state them, know every symbol and unit, and use them in numericals and reasoning."],
+ ["Are the simulation values real measurements?","No. They come from a simplified model of a 220 V shunt motor and show correct trends. Real motors differ because of saturation, armature reaction and losses."]
+];
+$("#faq").innerHTML=FAQ.map(f=>`<details class="faq"><summary>${f[0]}</summary><p>${f[1]}</p></details>`).join("");
+$("#printBtn").addEventListener("click",()=>{const v=$("#v-revision");v.classList.add("printing");$$("details.faq",v).forEach(d=>d.open=true);
+  try{window.print();$("#printHint").textContent="If no print dialog appeared, use your browser’s print command (Ctrl + P) and choose ‘Save as PDF’.";}catch(e){$("#printHint").textContent="Use your browser’s print command (Ctrl + P) and choose ‘Save as PDF’.";}
+  setTimeout(()=>v.classList.remove("printing"),1000);});
+window.addEventListener("beforeprint",()=>{if(currentView==="revision")$("#v-revision").classList.add("printing");else $(`#v-${currentView}`).classList.add("printing");});
+window.addEventListener("afterprint",()=>$$(".view.printing").forEach(v=>v.classList.remove("printing")));
+document.addEventListener("themechange",()=>{if(viewHooks[currentView])viewHooks[currentView]();});
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{if(viewHooks[currentView])viewHooks[currentView]();});
+let rzT;window.addEventListener("resize",()=>{clearTimeout(rzT);rzT=setTimeout(()=>{if(currentView==="module2")drawRel();if(currentView==="module3")viewHooks.module3();},150);});
+
+/* ================= start ================= */
+buildToc();renderProgress();
+go((location.hash||"#home").slice(1));
+</script>
+</body>
+</html>
